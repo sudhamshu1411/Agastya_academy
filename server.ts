@@ -14,12 +14,13 @@ app.use(express.json());
 const otpStore = new Map<string, string>();
 
 function getTransporter() {
-  // Using user provided SMTP settings
-  // The user requested agastyaacademy.online domain and contact@agastyaacademy.online email
+  const port = parseInt(process.env.SMTP_PORT || '465');
+  const secure = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : port === 465;
+  
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com', // fallback to gmail
-    port: parseInt(process.env.SMTP_PORT || '465'),
-    secure: process.env.SMTP_SECURE === 'true' || true,
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: port,
+    secure: secure,
     auth: {
       user: process.env.SMTP_USER || 'contact@agastyaacademy.online',
       pass: process.env.SMTP_PASS || '', 
@@ -61,7 +62,7 @@ app.post('/api/send-otp', async (req, res) => {
     res.json({ success: true, message: 'OTP sent successfully' });
   } catch (error: any) {
     console.error("Email sending error:", error);
-    res.status(500).json({ error: 'Failed to send verification email. Please check SMTP configuration.' });
+    res.status(500).json({ error: `Failed to send email: ${error.message || 'SMTP error'}` });
   }
 });
 
