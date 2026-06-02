@@ -40,13 +40,6 @@ app.post('/api/send-otp', async (req, res) => {
   otpStore.set(email, otp);
 
   try {
-    // If no SMTP_PASS is provided, we skip actual email sending and use a fallback OTP.
-    if (!process.env.SMTP_PASS) {
-      console.warn("SMTP_PASS is not configured. Falling back to mock email behavior (OTP: 123456).");
-      otpStore.set(email, '123456'); // Override with easy OTP in dev/mock mode
-      return res.json({ success: true, message: 'OTP sent (Mock mode: use 123456)' });
-    }
-
     const transporter = getTransporter();
     
     await transporter.sendMail({
