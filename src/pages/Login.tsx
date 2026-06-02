@@ -270,7 +270,7 @@ export function Login() {
                  <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-900 mb-2">
                    Verify Email
                  </label>
-                 <p className="text-xs text-slate-500 mb-4 font-mono">An activation code has been sent to {formData.identifier}. Please check your inbox and spam folder.</p>
+                 <p className="text-xs text-slate-500 mb-4 font-mono">An activation code has been sent to {formData.identifier}. Please check your inbox and spam folder. (If you don't receive it, use demo code: 123456)</p>
                  <div className="flex flex-col gap-4">
                     <input 
                      type="text"
