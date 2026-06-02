@@ -1,8 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import nodemailer from 'nodemailer';
+import dns from 'dns';
 import { createServer as createViteServer } from 'vite';
 import * as path from 'path';
+
+dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 const PORT = 3000;

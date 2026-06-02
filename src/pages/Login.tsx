@@ -43,7 +43,16 @@ export function Login() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email: formData.identifier })
             });
-            const data = await res.json();
+            
+            const rawText = await res.text();
+            let data;
+            try {
+              data = JSON.parse(rawText);
+            } catch (e) {
+              console.error("Invalid response from server:", rawText);
+              throw new Error("The server is not running the backend API. If you deployed this on Render or Vercel, ensure it is deployed as a 'Web Service' (Node.js) and NOT a 'Static Site'. The Start Command must be 'npm start'.");
+            }
+
             if (!res.ok) throw new Error(data.error);
             setIsLoading(false);
             setEmailVerificationStep(true);
@@ -61,7 +70,15 @@ export function Login() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: formData.identifier, otp: verificationCode })
           });
-          const data = await res.json();
+          
+          const rawText = await res.text();
+          let data;
+          try {
+            data = JSON.parse(rawText);
+          } catch (e) {
+            throw new Error("Backend API not found. Please ensure the app is deployed as a Web Service, not a Static Site.");
+          }
+
           if (!res.ok) throw new Error(data.error);
         } catch (err: any) {
            setError(err.message || "Invalid verification code.");
