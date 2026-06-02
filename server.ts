@@ -17,13 +17,18 @@ app.use(express.json());
 const otpStore = new Map<string, string>();
 
 function getTransporter() {
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
   const port = parseInt(process.env.SMTP_PORT || '465');
   const secure = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : port === 465;
   
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    host: host,
     port: port,
     secure: secure,
+    tls: {
+      rejectUnauthorized: false
+    },
+    connectionTimeout: 10000, // 10 seconds timeout
     auth: {
       user: process.env.SMTP_USER || 'contact@agastyaacademy.online',
       pass: process.env.SMTP_PASS || '', 
@@ -65,7 +70,7 @@ app.post('/api/send-otp', async (req, res) => {
     res.json({ success: true, message: 'OTP sent successfully' });
   } catch (error: any) {
     console.error("Email sending error:", error);
-    res.status(500).json({ error: `Failed to send email: ${error.message || 'SMTP error'}` });
+    res.status(500).json({ error: `Failed to send email: ${error.message || 'SMTP error'} (Host: ${process.env.SMTP_HOST || 'smtp.gmail.com'}, Port: ${process.env.SMTP_PORT || '465'})` });
   }
 });
 
