@@ -1,0 +1,6 @@
+{
+  "name": "Agastya Academy of Physics",
+  "description": "Premium NEET coaching management system and student portal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

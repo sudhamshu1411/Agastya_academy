@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+  --font-mono: "Space Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-slate-50: #FDFCFB;
+  --color-slate-100: #F5F2ED;
+  --color-slate-200: #E5E1D8;
+  --color-slate-300: #D1C9BC;
+  --color-slate-400: #999999;
+  --color-slate-500: #8C7B65;
+  --color-slate-600: #666666;
+  --color-slate-700: #4A4A4A;
+  --color-slate-800: #222222;
+  --color-slate-900: #1A1A1A;
+  --color-slate-950: #0f0f0f;
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased bg-slate-50 text-slate-900 selection:bg-slate-900 selection:text-white;
+  }
+}
