@@ -7,13 +7,14 @@ import autoTable from "jspdf-autotable";
 import { motion, AnimatePresence } from "motion/react";
 import { getAdmissions, updateAdmissionStatus, deleteAdmissionByEmail, updateAdmissionByEmail, deleteAdmissionById } from "../lib/admissions";
 import { getValidUsers, deleteUser, updateUserRole, updateUser } from "../lib/users";
-import { ShieldAlert, Trash2, Edit2 } from "lucide-react";
+import { ShieldAlert, Trash2, Edit2, Menu, X } from "lucide-react";
 import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function FounderDashboard() {
   const userFullName = localStorage.getItem("userFullName") || "Director";
   const [activeTab, setActiveTab] = useState("executive");
   const [systemLocked, setSystemLocked] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [auditFilter, setAuditFilter] = useState("All");
   const [admissionsLogs, setAdmissionsLogs] = useState<any[]>([]);
   const [portalUsers, setPortalUsers] = useState<any[]>([]);
@@ -199,54 +200,59 @@ export function FounderDashboard() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
       {/* Founder Sidebar */}
-      <aside className="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col fixed md:sticky top-0 h-auto md:h-screen z-40 border-r border-[#D4AF37]/30">
-        <div className="p-6 border-b border-[#D4AF37]/20 flex items-center gap-3">
+      <aside className={`w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col fixed md:sticky top-0 ${isMobileMenuOpen ? 'h-screen' : 'h-auto'} md:h-screen z-40 border-r border-[#D4AF37]/30 transition-all`}>
+        <div className="p-6 border-b border-[#D4AF37]/20 flex items-center justify-between gap-3">
           <div className="flex flex-col">
             <h1 className="text-white font-serif italic text-xl tracking-tighter leading-none flex items-center gap-2">
               Agastya <ShieldCheck className="w-4 h-4 text-[#D4AF37]" />
             </h1>
             <p className="text-[9px] text-[#D4AF37] uppercase tracking-[0.3em] font-bold mt-1">Founder's Office</p>
           </div>
+          <button className="md:hidden text-white" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-          <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mb-2">Institution</div>
-          <NavItem active={activeTab === 'executive'} onClick={() => setActiveTab('executive')} icon={<Building2 className="w-4 h-4"/>} label="Executive Summary" />
-          <NavItem active={activeTab === 'finance'} onClick={() => setActiveTab('finance')} icon={<DollarSign className="w-4 h-4"/>} label="Financials & Revenue" />
-          
-          <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Master Data</div>
-          <NavItem active={activeTab === 'admissions'} onClick={() => setActiveTab('admissions')} icon={<UserPlus className="w-4 h-4"/>} label="Admissions Log" />
-          <NavItem active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<Users className="w-4 h-4"/>} label="Global Student List" />
-          <NavItem active={activeTab === 'faculty'} onClick={() => setActiveTab('faculty')} icon={<GraduationCap className="w-4 h-4"/>} label="Faculty Roster" />
-          
-          <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Academic Control</div>
-          <NavItem active={activeTab === 'academics'} onClick={() => setActiveTab('academics')} icon={<FileText className="w-4 h-4"/>} label="Content & Assessments" />
-          <NavItem active={activeTab === 'live'} onClick={() => setActiveTab('live')} icon={<Video className="w-4 h-4"/>} label="Live Operations" />
-          <Link to="/founder/schedule">
-            <NavItem icon={<Calendar className="w-4 h-4"/>} label="Central Scheduler" active={false} onClick={() => {}} />
-          </Link>
-          
-          <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Portal Control</div>
-          <NavItem active={activeTab === 'users'} onClick={() => setActiveTab('users')} icon={<ShieldAlert className="w-4 h-4"/>} label="User Access Directory" />
-          <NavItem active={activeTab === 'database'} onClick={() => setActiveTab('database')} icon={<Database className="w-4 h-4"/>} label="Database Management" />
-          <NavItem active={activeTab === 'audit'} onClick={() => setActiveTab('audit')} icon={<Terminal className="w-4 h-4"/>} label="System Audit Log" />
-          <NavItem active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<Settings className="w-4 h-4"/>} label="Global Settings" />
-        </div>
-        
-        <RoleSwitcher />
-        <div className="p-4 border-t border-[#D4AF37]/20">
-          <div className="flex items-center gap-3 px-3 py-2 text-white/60 mb-2">
-            <div className="w-8 h-8 rounded-full bg-slate-800 border border-[#D4AF37] flex items-center justify-center">
-              <span className="text-[10px] uppercase font-bold text-[#D4AF37]">{userFullName.charAt(0)}</span>
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-white uppercase tracking-widest">{userFullName}</p>
-              <p className="text-[9px] text-[#D4AF37] font-mono">Level 0 Clearance</p>
-            </div>
+        <div className={`flex-1 flex col flex-col ${isMobileMenuOpen ? 'block' : 'hidden'} md:flex overflow-y-auto`}>
+          <div className="flex-1 py-6 px-4 space-y-1">
+            <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mb-2">Institution</div>
+            <NavItem active={activeTab === 'executive'} onClick={() => { setActiveTab('executive'); setIsMobileMenuOpen(false); }} icon={<Building2 className="w-4 h-4"/>} label="Executive Summary" />
+            <NavItem active={activeTab === 'finance'} onClick={() => { setActiveTab('finance'); setIsMobileMenuOpen(false); }} icon={<DollarSign className="w-4 h-4"/>} label="Financials & Revenue" />
+            
+            <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Master Data</div>
+            <NavItem active={activeTab === 'admissions'} onClick={() => { setActiveTab('admissions'); setIsMobileMenuOpen(false); }} icon={<UserPlus className="w-4 h-4"/>} label="Admissions Log" />
+            <NavItem active={activeTab === 'students'} onClick={() => { setActiveTab('students'); setIsMobileMenuOpen(false); }} icon={<Users className="w-4 h-4"/>} label="Global Student List" />
+            <NavItem active={activeTab === 'faculty'} onClick={() => { setActiveTab('faculty'); setIsMobileMenuOpen(false); }} icon={<GraduationCap className="w-4 h-4"/>} label="Faculty Roster" />
+            
+            <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Academic Control</div>
+            <NavItem active={activeTab === 'academics'} onClick={() => { setActiveTab('academics'); setIsMobileMenuOpen(false); }} icon={<FileText className="w-4 h-4"/>} label="Content & Assessments" />
+            <NavItem active={activeTab === 'live'} onClick={() => { setActiveTab('live'); setIsMobileMenuOpen(false); }} icon={<Video className="w-4 h-4"/>} label="Live Operations" />
+            <Link to="/founder/schedule" onClick={() => setIsMobileMenuOpen(false)}>
+              <NavItem icon={<Calendar className="w-4 h-4"/>} label="Central Scheduler" active={false} onClick={() => {}} />
+            </Link>
+            
+            <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Portal Control</div>
+            <NavItem active={activeTab === 'users'} onClick={() => { setActiveTab('users'); setIsMobileMenuOpen(false); }} icon={<ShieldAlert className="w-4 h-4"/>} label="User Access Directory" />
+            <NavItem active={activeTab === 'database'} onClick={() => { setActiveTab('database'); setIsMobileMenuOpen(false); }} icon={<Database className="w-4 h-4"/>} label="Database Management" />
+            <NavItem active={activeTab === 'audit'} onClick={() => { setActiveTab('audit'); setIsMobileMenuOpen(false); }} icon={<Terminal className="w-4 h-4"/>} label="System Audit Log" />
+            <NavItem active={activeTab === 'settings'} onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }} icon={<Settings className="w-4 h-4"/>} label="Global Settings" />
           </div>
-          <Link to="/login" className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-[#D4AF37] hover:bg-[#F3E5AB] transition-colors text-[10px] uppercase tracking-widest font-bold mt-4">
-            Exit Secure Portal
-          </Link>
+          
+          <RoleSwitcher />
+          <div className="p-4 border-t border-[#D4AF37]/20">
+            <div className="flex items-center gap-3 px-3 py-2 text-white/60 mb-2">
+              <div className="w-8 h-8 rounded-full bg-slate-800 border border-[#D4AF37] flex items-center justify-center">
+                <span className="text-[10px] uppercase font-bold text-[#D4AF37]">{userFullName.charAt(0)}</span>
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-white uppercase tracking-widest">{userFullName}</p>
+                <p className="text-[9px] text-[#D4AF37] font-mono">Level 0 Clearance</p>
+              </div>
+            </div>
+            <Link to="/login" className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-[#D4AF37] hover:bg-[#F3E5AB] transition-colors text-[10px] uppercase tracking-widest font-bold mt-4">
+              Exit Secure Portal
+            </Link>
+          </div>
         </div>
       </aside>
 

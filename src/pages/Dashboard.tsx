@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, Calendar, Clock, LogOut, CheckCircle2, Circle, Activity, FileText, ChevronRight, AlertCircle, Bell, CreditCard, UserCheck, Download } from "lucide-react";
+import { BookOpen, Calendar, Clock, LogOut, CheckCircle2, Circle, Activity, FileText, ChevronRight, AlertCircle, Bell, CreditCard, UserCheck, Download, Menu, X } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { motion } from "motion/react";
 import { getMaterials, getAssessments, getNotices, getMeetings } from "../lib/store";
@@ -10,6 +10,7 @@ export function StudentDashboard() {
   const userRole = localStorage.getItem("userRole") || "student";
   const userFullName = localStorage.getItem("userFullName") || "Rahul Sharma";
   const [activeTab, setActiveTab] = useState(userRole === "new user" ? "demo_dashboard" : "dashboard");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [materials, setMaterials] = useState(getMaterials());
   const [assessments, setAssessments] = useState(getAssessments());
@@ -76,55 +77,60 @@ export function StudentDashboard() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
       {/* Sidebar ERP Menu */}
-      <aside className="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col fixed md:sticky top-0 h-auto md:h-screen z-40 border-r border-slate-900">
-        <div className="p-6 border-b border-white/20 flex items-center gap-3">
+      <aside className={`w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col fixed md:sticky top-0 ${isMobileMenuOpen ? 'h-screen' : 'h-auto'} md:h-screen z-40 border-r border-slate-900 transition-all`}>
+        <div className="p-6 border-b border-white/20 flex items-center justify-between gap-3">
           <div className="flex flex-col">
             <h1 className="text-white font-serif italic text-xl tracking-tighter leading-none">Agastya</h1>
             <p className="text-[9px] text-white/50 uppercase tracking-[0.3em] font-bold mt-1">Portal</p>
           </div>
+          <button className="md:hidden text-white" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1 text-sm font-medium">
-          {userRole === "new user" && (
-            <>
-              <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mb-2">Portal Access</div>
-              <NavItem active={activeTab === "pending"} onClick={() => setActiveTab("pending")} icon={<Activity className="w-4 h-4"/>} label="Pending Status" />
-              <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Preview</div>
-              <NavItem active={activeTab === "demo_dashboard"} onClick={() => setActiveTab("demo_dashboard")} icon={<Activity className="w-4 h-4"/>} label="Demo Dashboard" />
-              <NavItem active={activeTab === "demo_activities"} onClick={() => setActiveTab("demo_activities")} icon={<Calendar className="w-4 h-4"/>} label="Demo Live & Tasks" />
-              <NavItem active={activeTab === "demo_materials"} onClick={() => setActiveTab("demo_materials")} icon={<FileText className="w-4 h-4"/>} label="Demo Materials" />
-              <NavItem active={activeTab === "demo_exams"} onClick={() => setActiveTab("demo_exams")} icon={<Clock className="w-4 h-4"/>} label="Demo Exams" />
-              <NavItem active={activeTab === "demo_analytics"} onClick={() => setActiveTab("demo_analytics")} icon={<Activity className="w-4 h-4"/>} label="Demo Performance" />
-            </>
-          )}
+        <div className={`flex-1 flex col flex-col ${isMobileMenuOpen ? 'block' : 'hidden'} md:flex overflow-y-auto`}>
+          <div className="flex-1 py-6 px-4 space-y-1 text-sm font-medium">
+            {userRole === "new user" && (
+              <>
+                <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mb-2">Portal Access</div>
+                <NavItem active={activeTab === "pending"} onClick={() => { setActiveTab("pending"); setIsMobileMenuOpen(false); }} icon={<Activity className="w-4 h-4"/>} label="Pending Status" />
+                <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Preview</div>
+                <NavItem active={activeTab === "demo_dashboard"} onClick={() => { setActiveTab("demo_dashboard"); setIsMobileMenuOpen(false); }} icon={<Activity className="w-4 h-4"/>} label="Demo Dashboard" />
+                <NavItem active={activeTab === "demo_activities"} onClick={() => { setActiveTab("demo_activities"); setIsMobileMenuOpen(false); }} icon={<Calendar className="w-4 h-4"/>} label="Demo Live & Tasks" />
+                <NavItem active={activeTab === "demo_materials"} onClick={() => { setActiveTab("demo_materials"); setIsMobileMenuOpen(false); }} icon={<FileText className="w-4 h-4"/>} label="Demo Materials" />
+                <NavItem active={activeTab === "demo_exams"} onClick={() => { setActiveTab("demo_exams"); setIsMobileMenuOpen(false); }} icon={<Clock className="w-4 h-4"/>} label="Demo Exams" />
+                <NavItem active={activeTab === "demo_analytics"} onClick={() => { setActiveTab("demo_analytics"); setIsMobileMenuOpen(false); }} icon={<Activity className="w-4 h-4"/>} label="Demo Performance" />
+              </>
+            )}
 
-          {userRole !== "new user" && (
-            <>
-              <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mb-2">Academics</div>
-              <NavItem active={activeTab === "dashboard"} onClick={() => setActiveTab("dashboard")} icon={<Activity className="w-4 h-4"/>} label="Dashboard" />
-              <NavItem active={activeTab === "activities"} onClick={() => setActiveTab("activities")} icon={<Calendar className="w-4 h-4"/>} label="Live & Tasks" />
-              <NavItem active={activeTab === "materials"} onClick={() => setActiveTab("materials")} icon={<FileText className="w-4 h-4"/>} label="Study Materials" />
-              
-              <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Evaluation</div>
-              <NavItem active={activeTab === "exams"} onClick={() => setActiveTab("exams")} icon={<Clock className="w-4 h-4"/>} label="Exams & Quizzes" />
-              <NavItem active={activeTab === "analytics"} onClick={() => setActiveTab("analytics")} icon={<Activity className="w-4 h-4"/>} label="Performance" />
-              
-              <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Administration</div>
-              <NavItem active={activeTab === "attendance"} onClick={() => setActiveTab("attendance")} icon={<UserCheck className="w-4 h-4"/>} label="Attendance" />
-              <NavItem active={activeTab === "payments"} onClick={() => setActiveTab("payments")} icon={<CreditCard className="w-4 h-4"/>} label="Payments" />
-              <Link to="/admin/schedule">
-                <NavItem icon={<Calendar className="w-4 h-4"/>} label="Central Scheduler" />
-              </Link>
-            </>
-          )}
-        </div>
-        
-        <RoleSwitcher />
-        <div className="p-4 border-t border-white/20">
-          <Link to="/" className="flex items-center gap-3 px-3 py-2 text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest font-semibold">
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </Link>
+            {userRole !== "new user" && (
+              <>
+                <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mb-2">Academics</div>
+                <NavItem active={activeTab === "dashboard"} onClick={() => { setActiveTab("dashboard"); setIsMobileMenuOpen(false); }} icon={<Activity className="w-4 h-4"/>} label="Dashboard" />
+                <NavItem active={activeTab === "activities"} onClick={() => { setActiveTab("activities"); setIsMobileMenuOpen(false); }} icon={<Calendar className="w-4 h-4"/>} label="Live & Tasks" />
+                <NavItem active={activeTab === "materials"} onClick={() => { setActiveTab("materials"); setIsMobileMenuOpen(false); }} icon={<FileText className="w-4 h-4"/>} label="Study Materials" />
+                
+                <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Evaluation</div>
+                <NavItem active={activeTab === "exams"} onClick={() => { setActiveTab("exams"); setIsMobileMenuOpen(false); }} icon={<Clock className="w-4 h-4"/>} label="Exams & Quizzes" />
+                <NavItem active={activeTab === "analytics"} onClick={() => { setActiveTab("analytics"); setIsMobileMenuOpen(false); }} icon={<Activity className="w-4 h-4"/>} label="Performance" />
+                
+                <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Administration</div>
+                <NavItem active={activeTab === "attendance"} onClick={() => { setActiveTab("attendance"); setIsMobileMenuOpen(false); }} icon={<UserCheck className="w-4 h-4"/>} label="Attendance" />
+                <NavItem active={activeTab === "payments"} onClick={() => { setActiveTab("payments"); setIsMobileMenuOpen(false); }} icon={<CreditCard className="w-4 h-4"/>} label="Payments" />
+                <Link to="/admin/schedule" onClick={() => setIsMobileMenuOpen(false)}>
+                  <NavItem icon={<Calendar className="w-4 h-4"/>} label="Central Scheduler" />
+                </Link>
+              </>
+            )}
+          </div>
+          
+          <RoleSwitcher />
+          <div className="p-4 border-t border-white/20">
+            <Link to="/" className="flex items-center gap-3 px-3 py-2 text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest font-semibold">
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </Link>
+          </div>
         </div>
       </aside>
 

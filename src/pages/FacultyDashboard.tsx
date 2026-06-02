@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BookOpen, Calendar, Clock, LogOut, CheckCircle2, Circle, Activity, FileText, ChevronRight, Users, AlertCircle, Video } from "lucide-react";
+import { BookOpen, Calendar, Clock, LogOut, CheckCircle2, Circle, Activity, FileText, ChevronRight, Users, AlertCircle, Video, Menu, X } from "lucide-react";
 import { motion } from "motion/react";
 import { getAssessments, saveAssessment, deleteAssessment, getMaterials, saveMaterial, revokeMaterial, getSubmissions, gradeSubmission, getInterventions, logIntervention, getMeetings } from "../lib/store";
 import { RoleSwitcher } from "../components/RoleSwitcher";
@@ -9,6 +9,7 @@ export function FacultyDashboard() {
   const navigate = useNavigate();
   const userFullName = localStorage.getItem("userFullName") || "R.P Kumar";
   const [activeTab, setActiveTab] = useState("overview");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [meetings, setMeetings] = useState(getMeetings());
   const classes = meetings; // showing all meetings including PTM and Interviews
@@ -40,39 +41,44 @@ export function FacultyDashboard() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
       {/* Faculty Sidebar */}
-      <aside className="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col fixed md:sticky top-0 h-auto md:h-screen z-40 border-r border-slate-900">
-        <div className="p-6 border-b border-white/20 flex items-center gap-3">
+      <aside className={`w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col fixed md:sticky top-0 ${isMobileMenuOpen ? 'h-screen' : 'h-auto'} md:h-screen z-40 border-r border-slate-900 transition-all`}>
+        <div className="p-6 border-b border-white/20 flex items-center justify-between gap-3">
           <div className="flex flex-col">
             <h1 className="text-white font-serif italic text-xl tracking-tighter leading-none">Agastya</h1>
             <p className="text-[9px] text-white/50 uppercase tracking-[0.3em] font-bold mt-1">Faculty Portal</p>
           </div>
+          <button className="md:hidden text-white" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-          <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mb-2">Instruction</div>
-          <NavItem active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<Activity className="w-4 h-4"/>} label="Overview & Schedule" />
-          <NavItem active={activeTab === 'batches'} onClick={() => setActiveTab('batches')} icon={<Users className="w-4 h-4"/>} label="My Batches" />
-          
-          <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Evaluation</div>
-          <NavItem active={activeTab === 'evaluations'} onClick={() => setActiveTab('evaluations')} icon={<CheckCircle2 className="w-4 h-4"/>} label="Submissions & Grading" />
-          <NavItem active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<AlertCircle className="w-4 h-4"/>} label="Student Interventions" />
-          <NavItem active={activeTab === 'materials'} onClick={() => setActiveTab('materials')} icon={<FileText className="w-4 h-4"/>} label="Content & Uploads" />
-        </div>
-        
-        <RoleSwitcher />
-        <div className="p-4 border-t border-white/20">
-          <div className="flex items-center gap-3 px-3 py-2 text-white/60 mb-2">
-            <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
-              <span className="text-[10px] uppercase font-bold text-white">{userFullName.charAt(0)}</span>
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-white uppercase tracking-widest">{userFullName}</p>
-              <p className="text-[9px] text-white/60 font-mono">Senior Faculty</p>
-            </div>
+        <div className={`flex-1 flex col flex-col ${isMobileMenuOpen ? 'block' : 'hidden'} md:flex overflow-y-auto`}>
+          <div className="flex-1 py-6 px-4 space-y-1">
+            <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mb-2">Instruction</div>
+            <NavItem active={activeTab === 'overview'} onClick={() => { setActiveTab('overview'); setIsMobileMenuOpen(false); }} icon={<Activity className="w-4 h-4"/>} label="Overview & Schedule" />
+            <NavItem active={activeTab === 'batches'} onClick={() => { setActiveTab('batches'); setIsMobileMenuOpen(false); }} icon={<Users className="w-4 h-4"/>} label="My Batches" />
+            
+            <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Evaluation</div>
+            <NavItem active={activeTab === 'evaluations'} onClick={() => { setActiveTab('evaluations'); setIsMobileMenuOpen(false); }} icon={<CheckCircle2 className="w-4 h-4"/>} label="Submissions & Grading" />
+            <NavItem active={activeTab === 'students'} onClick={() => { setActiveTab('students'); setIsMobileMenuOpen(false); }} icon={<AlertCircle className="w-4 h-4"/>} label="Student Interventions" />
+            <NavItem active={activeTab === 'materials'} onClick={() => { setActiveTab('materials'); setIsMobileMenuOpen(false); }} icon={<FileText className="w-4 h-4"/>} label="Content & Uploads" />
           </div>
-          <Link to="/login" className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-white hover:bg-slate-200 transition-colors text-[10px] uppercase tracking-widest font-bold mt-4">
-            Sign Out
-          </Link>
+          
+          <RoleSwitcher />
+          <div className="p-4 border-t border-white/20">
+            <div className="flex items-center gap-3 px-3 py-2 text-white/60 mb-2">
+              <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+                <span className="text-[10px] uppercase font-bold text-white">{userFullName.charAt(0)}</span>
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-white uppercase tracking-widest">{userFullName}</p>
+                <p className="text-[9px] text-white/60 font-mono">Senior Faculty</p>
+              </div>
+            </div>
+            <Link to="/login" className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-white hover:bg-slate-200 transition-colors text-[10px] uppercase tracking-widest font-bold mt-4">
+              Sign Out
+            </Link>
+          </div>
         </div>
       </aside>
 
