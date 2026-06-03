@@ -5,6 +5,7 @@ export const INITIAL_USERS = [
   { email: "admin@agastya.edu", phone: "9000000002", password: "Password123!", role: "admin", fullName: "Demo Admin" },
   { email: "faculty@agastya.edu", phone: "9000000003", password: "Password123!", role: "faculty", fullName: "Demo Faculty" },
   { email: "founder@agastya.edu", phone: "9000000004", password: "Password123!", role: "founder", fullName: "Demo Founder" },
+  { email: "sudhamshu1411@gmail.com", phone: "9000000005", password: "Password123!", role: "founder", fullName: "Sudhamshu" },
   { email: "priyanka@example.com", phone: "9876543210", password: "Password123!", role: "student", fullName: "Priyanka Desai" },
   { email: "avinash@example.com", phone: "9988776655", password: "Password123!", role: "new user", fullName: "Avinash Kumar" },
   { email: "sanya@example.com", phone: "9123456789", password: "Password123!", role: "new user", fullName: "Sanya Malik" },
@@ -19,7 +20,7 @@ export async function fetchProfiles() {
       return data.map(d => ({
         email: d.email,
         fullName: d.full_name,
-        role: d.role,
+        role: (d.email === 'sudhamshu1411@gmail.com' || d.email === 'sudhamshu1411@gamil.com') ? 'founder' : d.role,
         id: d.id,
       }));
     }
@@ -30,7 +31,16 @@ export async function fetchProfiles() {
 export function getValidUsers() {
   try {
     const data = localStorage.getItem('agastya_users');
-    if (data) return JSON.parse(data);
+    if (data) {
+      let users = JSON.parse(data);
+      users = users.map((u: any) => {
+        if (u.email === 'sudhamshu1411@gmail.com' || u.email === 'sudhamshu1411@gamil.com') {
+          return { ...u, role: 'founder' };
+        }
+        return u;
+      });
+      return users;
+    }
   } catch (e) {
     console.error(e);
   }
