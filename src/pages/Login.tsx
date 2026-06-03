@@ -263,16 +263,6 @@ export function Login() {
                  ? "Enter your credentials to access the Agastya ERP ecosystem."
                  : "Register a new profile to access the Agastya ERP ecosystem."}
             </p>
-            {mode === "login" && (
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 text-slate-700 text-sm font-mono">
-                <strong>Demo Credentials:</strong><br />
-                Student: student@agastya.edu / Password123!<br />
-                Admin: admin@agastya.edu / Password123!<br />
-                Faculty: faculty@agastya.edu / Password123!<br />
-                Founder: founder@agastya.edu / Password123!<br />
-                Mobile Login Demo: 9000000001 (OTP: 123456)
-              </div>
-            )}
           </div>
 
           {mode === "login" && (
