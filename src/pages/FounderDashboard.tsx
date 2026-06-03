@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Building2, Users, GraduationCap, DollarSign, Settings, Database, Search, ShieldCheck, Download, Lock, FileOutput, Terminal, Video, FileText, Activity, UserPlus, Calendar } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import jsPDF from "jspdf";
@@ -11,13 +11,6 @@ import { ShieldAlert, Trash2, Edit2, Menu, X } from "lucide-react";
 import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function FounderDashboard() {
-  const isSuperAdmin = localStorage.getItem("isSuperAdmin") === "true";
-  const originalRole = localStorage.getItem("originalUserRole") || localStorage.getItem("userRole");
-  
-  if (originalRole !== "founder" && !isSuperAdmin) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   const userFullName = localStorage.getItem("userFullName") || "Director";
   const [activeTab, setActiveTab] = useState("executive");
   const [systemLocked, setSystemLocked] = useState(false);
@@ -256,9 +249,9 @@ export function FounderDashboard() {
                 <p className="text-[9px] text-[#D4AF37] font-mono">Level 0 Clearance</p>
               </div>
             </div>
-            <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }} className="flex w-full items-center justify-center px-3 py-2 text-slate-900 bg-[#D4AF37] hover:bg-[#F3E5AB] transition-colors text-[10px] uppercase tracking-widest font-bold mt-4 cursor-pointer">
+            <Link to="/login" className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-[#D4AF37] hover:bg-[#F3E5AB] transition-colors text-[10px] uppercase tracking-widest font-bold mt-4">
               Exit Secure Portal
-            </button>
+            </Link>
           </div>
         </div>
       </aside>

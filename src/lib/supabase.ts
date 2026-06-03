@@ -16,6 +16,7 @@ export const supabase = (supabaseUrl && supabaseKey)
           localStorage.removeItem('userRole');
           localStorage.removeItem('userFullName');
           localStorage.removeItem('authToken');
+          localStorage.removeItem('isSuperAdmin');
           return { error: null };
         },
         signInWithPassword: async ({ email, password }: any) => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Users, BarChart3, Calendar, Settings, AlertCircle, LayoutDashboard, FileText, Bell, Search, CheckCircle2, MoreHorizontal, ShieldAlert, Trash2, Menu, X, Database, Mail, FolderInput } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { getValidUsers, deleteUser, updateUserRole } from "../lib/users";
@@ -8,13 +8,6 @@ import { getNotices, saveNotice, getInterventions, logIntervention, getStudentAt
 import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function AdminDashboard() {
-  const isSuperAdmin = localStorage.getItem("isSuperAdmin") === "true";
-  const originalRole = localStorage.getItem("originalUserRole") || localStorage.getItem("userRole");
-  
-  if (originalRole !== "admin" && originalRole !== "founder" && !isSuperAdmin) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   const userFullName = localStorage.getItem("userFullName") || "M. Kumar";
   const [activeTab, setActiveTab] = useState("overview");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -226,12 +219,12 @@ export function AdminDashboard() {
               </div>
               <div>
                 <p className="text-[11px] font-bold text-white uppercase tracking-widest">{userFullName}</p>
-                <p className="text-[9px] text-white/60 font-mono">System Admin</p>
+                <p className="text-[9px] text-white/60 font-mono">Super Admin</p>
               </div>
             </div>
-            <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }} className="flex w-full items-center justify-center py-2 text-slate-900 bg-white hover:bg-slate-200 transition-colors text-[10px] uppercase tracking-widest font-bold mt-4 cursor-pointer">
+            <Link to="/login" className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-white hover:bg-slate-200 transition-colors text-[10px] uppercase tracking-widest font-bold mt-4">
               Sign Out
-            </button>
+            </Link>
           </div>
         </div>
       </aside>

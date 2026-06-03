@@ -127,10 +127,10 @@ export function StudentDashboard() {
           
           <RoleSwitcher />
           <div className="p-4 border-t border-white/20">
-            <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }} className="flex w-full items-center gap-3 px-3 py-2 text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest font-semibold cursor-pointer">
+            <Link to="/" className="flex items-center gap-3 px-3 py-2 text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest font-semibold">
               <LogOut className="w-4 h-4" />
               Sign Out
-            </button>
+            </Link>
           </div>
         </div>
       </aside>

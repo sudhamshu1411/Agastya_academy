@@ -34,7 +34,12 @@ export function Admissions() {
   };
 
   const handleSignOut = () => {
-    localStorage.clear();
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userPhone");
+    localStorage.removeItem("userFullName");
+    localStorage.removeItem("isSuperAdmin");
     setIsAuthenticated(false);
     setFormData(prev => ({
       ...prev,
