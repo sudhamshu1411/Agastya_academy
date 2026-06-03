@@ -140,6 +140,7 @@ export function Login() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: formData.identifier, password: formData.password })
           });
+          
           if (res.ok) {
             const data = await res.json();
             if (data.success && data.user) {
@@ -157,10 +158,23 @@ export function Login() {
               navigate(destination);
               return;
             }
+          } else if (res.status === 401) {
+            const errorData = await res.json();
+            setError(`Auth failed: ${errorData.error || "Invalid credentials"}`);
+            setIsLoading(false);
+            return;
+          } else if (res.status >= 500) {
+            console.error("Backend login API returned 500+ error.");
+            throw new Error(`Server error: ${res.status}`);
           }
-        } catch (e) {
-          // Fallback to Supabase
-          console.warn("Backend auth check failed, falling back to Supabase.");
+        } catch (e: any) {
+          if (e.message?.includes("Server error")) {
+            setError(`Backend authentication is unavailable (${e.message}).`);
+            setIsLoading(false);
+            return;
+          }
+          // Fallback to Supabase for other errors or 404 (not founder)
+          console.warn("Backend auth check bypassed or failed, falling back to Supabase.", e);
         }
 
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
