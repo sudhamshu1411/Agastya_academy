@@ -34,11 +34,7 @@ export function Admissions() {
   };
 
   const handleSignOut = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userPhone");
-    localStorage.removeItem("userFullName");
+    localStorage.clear();
     setIsAuthenticated(false);
     setFormData(prev => ({
       ...prev,

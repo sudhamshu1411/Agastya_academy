@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import { BookOpen, Calendar, Clock, LogOut, CheckCircle2, Circle, Activity, FileText, ChevronRight, Users, AlertCircle, Video, Menu, X, UserCheck, UploadCloud, File, Image as ImageIcon, Film } from "lucide-react";
 import { motion } from "motion/react";
 import { getAssessments, saveAssessment, deleteAssessment, getMaterials, saveMaterial, revokeMaterial, getSubmissions, gradeSubmission, getInterventions, logIntervention, getMeetings, getBatches, saveBatch, getAttendanceLogs, saveAttendanceLogs, getStudentAttendancePercentage } from "../lib/store";
@@ -8,6 +8,13 @@ import { getAdmissions } from "../lib/admissions";
 import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function FacultyDashboard() {
+  const isSuperAdmin = localStorage.getItem("isSuperAdmin") === "true";
+  const originalRole = localStorage.getItem("originalUserRole") || localStorage.getItem("userRole");
+  
+  if (originalRole !== "faculty" && originalRole !== "admin" && originalRole !== "founder" && !isSuperAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const navigate = useNavigate();
   const userFullName = localStorage.getItem("userFullName") || "R.P Kumar";
   const [activeTab, setActiveTab] = useState("overview");
@@ -252,9 +259,9 @@ export function FacultyDashboard() {
                 <p className="text-[9px] text-white/60 font-mono">Senior Faculty</p>
               </div>
             </div>
-            <Link to="/login" className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-white hover:bg-slate-200 transition-colors text-[10px] uppercase tracking-widest font-bold mt-4">
+            <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }} className="flex w-full items-center justify-center py-2 text-slate-900 bg-white hover:bg-slate-200 transition-colors text-[10px] uppercase tracking-widest font-bold mt-4 cursor-pointer">
               Sign Out
-            </Link>
+            </button>
           </div>
         </div>
       </aside>

@@ -119,6 +119,7 @@ export function Login() {
         });
 
         const userEmail = formData.identifier.toLowerCase();
+        localStorage.setItem("originalUserRole", "new user");
         localStorage.setItem("userRole", "new user");
         localStorage.setItem("userEmail", userEmail);
         localStorage.setItem("userFullName", formData.fullName || "");
@@ -148,6 +149,7 @@ export function Login() {
               if (u.isSuperAdmin) {
                  localStorage.setItem("isSuperAdmin", "true");
               }
+              localStorage.setItem("originalUserRole", u.role);
               localStorage.setItem("userRole", u.role);
               localStorage.setItem("userEmail", u.email.toLowerCase());
               localStorage.setItem("userFullName", u.fullName);
@@ -185,6 +187,19 @@ export function Login() {
         let role = signInData?.user?.user_metadata?.role || "new user";
         let fullName = signInData?.user?.user_metadata?.full_name || "";
 
+        // Attempt to fetch from profiles table if supabase is active
+        if (!signInError && signInData?.user?.id && import.meta.env.VITE_SUPABASE_URL) {
+          try {
+            const { data: profile } = await supabase.from('profiles').select('role, full_name').eq('id', signInData.user.id).single();
+            if (profile) {
+              if (profile.role) role = profile.role;
+              if (profile.full_name) fullName = profile.full_name;
+            }
+          } catch (profileErr) {
+            console.warn("Could not fetch profile from Supabase:", profileErr);
+          }
+        }
+
         const { getValidUsers } = await import("../lib/users");
         const users = getValidUsers();
         let localUser = users.find((u: any) => u.email.toLowerCase() === formData.identifier.toLowerCase());
@@ -207,6 +222,7 @@ export function Login() {
         // Removed hardcoded email checks to allow proper role reading from database
 
         const userEmail = formData.identifier.toLowerCase();
+        localStorage.setItem("originalUserRole", role);
         localStorage.setItem("userRole", role);
         localStorage.setItem("userEmail", userEmail);
         localStorage.setItem("userFullName", fullName);
@@ -235,6 +251,7 @@ export function Login() {
             const user = users.find((u: any) => u.phone === formData.identifier);
             if (user) {
               localStorage.setItem("authToken", `mock_token_${user.role}_${Date.now()}`);
+              localStorage.setItem("originalUserRole", user.role);
               localStorage.setItem("userRole", user.role);
               localStorage.setItem("userEmail", user.email);
               localStorage.setItem("userPhone", user.phone);
