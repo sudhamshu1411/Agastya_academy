@@ -1,11 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import nodemailer from 'nodemailer';
-import dns from 'dns';
-import { createServer as createViteServer } from 'vite';
 import * as path from 'path';
-
-dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,21 +14,23 @@ const otpStore = new Map<string, string>();
 
 function getTransporter() {
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = parseInt(process.env.SMTP_PORT || '465');
-  const secure = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : port === 465;
+  const portStr = process.env.SMTP_PORT || '465';
+  const port = parseInt(portStr);
+  const secure = port === 465 || process.env.SMTP_SECURE === 'true';
   
   return nodemailer.createTransport({
     host: host,
     port: port,
     secure: secure,
-    tls: {
-      rejectUnauthorized: false
-    },
-    connectionTimeout: 10000, // 10 seconds timeout
+    family: 4, // Force IPv4 to prevent ENETUNREACH and timeouts on Vercel/Render
     auth: {
       user: process.env.SMTP_USER || 'contact@agastyaacademy.online',
       pass: process.env.SMTP_PASS || '', 
     },
+    tls: {
+      rejectUnauthorized: false
+    },
+    connectionTimeout: 10000,
   });
 }
 
@@ -91,6 +89,7 @@ app.post('/api/verify-otp', async (req, res) => {
 
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -109,4 +108,9 @@ async function startServer() {
   });
 }
 
-startServer();
+// Only start the server locally or on Render (not deployed as a Vercel serverless function)
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
