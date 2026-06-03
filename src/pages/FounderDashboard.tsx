@@ -7,7 +7,7 @@ import autoTable from "jspdf-autotable";
 import { motion, AnimatePresence } from "motion/react";
 import { getAdmissions, updateAdmissionStatus, deleteAdmissionByEmail, updateAdmissionByEmail, deleteAdmissionById } from "../lib/admissions";
 import { getValidUsers, deleteUser, updateUserRole, updateUser } from "../lib/users";
-import { ShieldAlert, Trash2, Edit2, Menu, X } from "lucide-react";
+import { ShieldAlert, Trash2, Edit2, Menu, X, CheckCircle2 } from "lucide-react";
 import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function FounderDashboard() {
@@ -22,6 +22,10 @@ export function FounderDashboard() {
   const [editingStudent, setEditingStudent] = useState<string | null>(null);
   const [editStudentName, setEditStudentName] = useState("");
   const [editStudentCohort, setEditStudentCohort] = useState("");
+
+  const [editingFaculty, setEditingFaculty] = useState<string | null>(null);
+  const [editFacultyData, setEditFacultyData] = useState<any>({});
+
 
   useEffect(() => {
     setAdmissionsLogs(getAdmissions());
@@ -48,6 +52,26 @@ export function FounderDashboard() {
     setPortalUsers(getValidUsers());
     setAdmissionsLogs(getAdmissions());
   };
+
+  const startEditFaculty = (faculty: any) => {
+    setEditingFaculty(faculty.email);
+    setEditFacultyData(faculty);
+  };
+
+  const handleSaveFaculty = () => {
+    updateUser(editFacultyData.email, {
+      fullName: editFacultyData.name,
+      facultyRole: editFacultyData.role,
+      facultySubject: editFacultyData.subject,
+      facultyCohorts: editFacultyData.cohorts,
+      facultyTotalStudents: editFacultyData.totalStudents,
+      facultyAvgScore: editFacultyData.avgScore,
+      facultyId: editFacultyData.id,
+    });
+    setEditingFaculty(null);
+    setPortalUsers(getValidUsers());
+  };
+
 
   const handleDeleteUser = (email: string) => {
     deleteUser(email);
@@ -114,13 +138,14 @@ export function FounderDashboard() {
     });
 
   const dynamicFaculty = portalUsers.filter((u: any) => u.role === "faculty").map((f: any, idx) => ({
-    id: `PF-0${idx + 1}`,
+    email: f.email,
+    id: f.facultyId || `PF-0${idx + 1}`,
     name: f.fullName || "Demo Faculty",
-    role: "Senior Faculty",
-    subject: "Assigned Subject",
-    cohorts: "Alpha, Beta",
-    totalStudents: 30,
-    avgScore: "80%"
+    role: f.facultyRole || "Senior Faculty",
+    subject: f.facultySubject || "Assigned Subject",
+    cohorts: f.facultyCohorts || "Alpha, Beta",
+    totalStudents: f.facultyTotalStudents || 30,
+    avgScore: f.facultyAvgScore || "80%"
   }));
   
   // if no dynamic faculty, provide default static fallback
@@ -531,18 +556,59 @@ export function FounderDashboard() {
               <tbody>
                 {facultyList.map((faculty, idx) => (
                   <motion.tr variants={itemVariants} key={idx} className="border-b border-slate-200 hover:bg-slate-50 transition-colors group">
-                    <td className="py-4 px-4 font-mono text-xs text-slate-500">{faculty.id}</td>
-                    <td className="py-4 px-4 font-bold text-slate-900 text-sm">{faculty.name}</td>
-                    <td className="py-4 px-4">
-                      <div className="text-[10px] uppercase tracking-widest font-bold mb-1">{faculty.role}</div>
-                      <div className="text-xs text-slate-500">{faculty.subject}</div>
-                    </td>
-                    <td className="py-4 px-4 text-[10px] uppercase tracking-widest font-mono text-slate-500">{faculty.cohorts}</td>
-                    <td className="py-4 px-4 text-xs font-mono">{faculty.totalStudents}</td>
-                    <td className="py-4 px-4 text-xs font-mono font-bold text-emerald-700">{faculty.avgScore}</td>
-                    <td className="py-4 px-4 text-right">
-                      <button className="text-[10px] uppercase tracking-widest font-bold text-slate-400 group-hover:text-slate-900 transition-colors">View Profile</button>
-                    </td>
+                    {editingFaculty === faculty.email ? (
+                      <>
+                        <td className="py-4 px-4 font-mono text-xs text-slate-500">
+                          <input type="text" className="w-full px-2 py-1 border border-slate-300 text-xs" value={editFacultyData.id || ''} onChange={(e) => setEditFacultyData({...editFacultyData, id: e.target.value})} placeholder="ID" />
+                        </td>
+                        <td className="py-4 px-4 font-bold text-slate-900 text-sm">
+                          <input type="text" className="w-full px-2 py-1 border border-slate-300 text-xs" value={editFacultyData.name || ''} onChange={(e) => setEditFacultyData({...editFacultyData, name: e.target.value})} placeholder="Name" />
+                        </td>
+                        <td className="py-4 px-4">
+                          <input type="text" className="w-full px-2 py-1 border border-slate-300 text-xs mb-1" value={editFacultyData.role || ''} onChange={(e) => setEditFacultyData({...editFacultyData, role: e.target.value})} placeholder="Role" />
+                          <input type="text" className="w-full px-2 py-1 border border-slate-300 text-xs" value={editFacultyData.subject || ''} onChange={(e) => setEditFacultyData({...editFacultyData, subject: e.target.value})} placeholder="Subject" />
+                        </td>
+                        <td className="py-4 px-4">
+                          <input type="text" className="w-full px-2 py-1 border border-slate-300 text-xs font-mono" value={editFacultyData.cohorts || ''} onChange={(e) => setEditFacultyData({...editFacultyData, cohorts: e.target.value})} placeholder="Cohorts" />
+                        </td>
+                        <td className="py-4 px-4">
+                          <input type="number" className="w-full px-2 py-1 border border-slate-300 text-xs font-mono" value={editFacultyData.totalStudents || ''} onChange={(e) => setEditFacultyData({...editFacultyData, totalStudents: parseInt(e.target.value)})} placeholder="Total Pax" />
+                        </td>
+                        <td className="py-4 px-4">
+                          <input type="text" className="w-full px-2 py-1 border border-slate-300 text-xs font-mono" value={editFacultyData.avgScore || ''} onChange={(e) => setEditFacultyData({...editFacultyData, avgScore: e.target.value})} placeholder="Avg Score" />
+                        </td>
+                        <td className="py-4 px-4 text-right flex flex-col gap-2 opacity-100">
+                          <button onClick={handleSaveFaculty} className="text-[10px] uppercase tracking-widest font-bold text-emerald-600 hover:text-emerald-800 transition-colors flex items-center justify-end gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Save
+                          </button>
+                          <button onClick={() => setEditingFaculty(null)} className="text-[10px] uppercase tracking-widest font-bold text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-end gap-1">
+                            Cancel
+                          </button>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="py-4 px-4 font-mono text-xs text-slate-500">{faculty.id}</td>
+                        <td className="py-4 px-4 font-bold text-slate-900 text-sm">{faculty.name}</td>
+                        <td className="py-4 px-4">
+                          <div className="text-[10px] uppercase tracking-widest font-bold mb-1">{faculty.role}</div>
+                          <div className="text-xs text-slate-500">{faculty.subject}</div>
+                        </td>
+                        <td className="py-4 px-4 text-[10px] uppercase tracking-widest font-mono text-slate-500">{faculty.cohorts}</td>
+                        <td className="py-4 px-4 text-xs font-mono">{faculty.totalStudents}</td>
+                        <td className="py-4 px-4 text-xs font-mono font-bold text-emerald-700">{faculty.avgScore}</td>
+                        <td className="py-4 px-4 text-right">
+                          <div className="flex flex-col items-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => startEditFaculty(faculty)} className="text-[10px] uppercase tracking-widest font-bold text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-1">
+                              <Edit2 className="w-3 h-3" /> Edit
+                            </button>
+                            <button onClick={() => handleDeleteUser(faculty.email)} className="text-[10px] uppercase tracking-widest font-bold text-red-400 hover:text-red-700 transition-colors flex items-center gap-1">
+                              <Trash2 className="w-3 h-3" /> Delete
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    )}
                   </motion.tr>
                 ))}
               </tbody>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Users, BarChart3, Calendar, Settings, AlertCircle, LayoutDashboard, FileText, Bell, Search, CheckCircle2, MoreHorizontal, ShieldAlert, Trash2, Menu, X, Database, Mail, FolderInput, Video, GraduationCap } from "lucide-react";
+import { Users, BarChart3, Calendar, Settings, AlertCircle, LayoutDashboard, FileText, Bell, Search, CheckCircle2, MoreHorizontal, ShieldAlert, Trash2, Menu, X, Database, Mail, FolderInput, Video, GraduationCap, UploadCloud, Paperclip } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { getValidUsers, deleteUser, updateUserRole } from "../lib/users";
 import { getAdmissions, deleteAdmissionByEmail, updateAdmissionByEmail } from "../lib/admissions";
@@ -27,6 +27,82 @@ export function AdminDashboard() {
   
   const [isBulkBatchModalOpen, setIsBulkBatchModalOpen] = useState(false);
   const [bulkBatchTarget, setBulkBatchTarget] = useState("");
+
+  const [curriculumTasks, setCurriculumTasks] = useState([
+    { id: '1', title: 'Update Physics Syllabus', description: 'Align with new board pattern', batch: 'Alpha', dueDate: '2026-07-15', status: 'pending', attachments: [] as File[] },
+    { id: '2', title: 'Prepare Chemistry Mock', description: 'Full syllabus mock test', batch: 'Beta', dueDate: '2026-06-18', status: 'completed', attachments: [] as File[] },
+  ]);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [currentTask, setCurrentTask] = useState<any>(null);
+  const [taskFiles, setTaskFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+  
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const filesArray = Array.from(e.dataTransfer.files);
+      setTaskFiles(prev => [...prev, ...filesArray]);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const filesArray = Array.from(e.target.files);
+      setTaskFiles(prev => [...prev, ...filesArray]);
+    }
+  };
+  
+  const removeTaskFile = (index: number) => {
+    setTaskFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const openTaskModal = (task: any = null) => {
+    setCurrentTask(task);
+    setTaskFiles(task?.attachments || []);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleSaveTask = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const newTask = {
+      id: currentTask?.id || Date.now().toString(),
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      batch: formData.get("batch") as string,
+      dueDate: formData.get("dueDate") as string,
+      status: formData.get("status") as string,
+      attachments: taskFiles
+    };
+    
+    if (currentTask) {
+      setCurriculumTasks(prev => prev.map(t => t.id === currentTask.id ? newTask : t));
+    } else {
+      setCurriculumTasks(prev => [...prev, newTask]);
+    }
+    setIsTaskModalOpen(false);
+  };
+
+  const handleToggleTaskStatus = (id: string) => {
+    setCurriculumTasks(prev => prev.map(t => t.id === id ? { ...t, status: t.status === 'completed' ? 'pending' : 'completed' } : t));
+  };
+  
+  const handleDeleteTask = (id: string) => {
+    if(window.confirm('Are you sure you want to delete this task?')) {
+        setCurriculumTasks(prev => prev.filter(t => t.id !== id));
+    }
+  };
 
   useEffect(() => {
     setPortalUsers(getValidUsers());
@@ -636,6 +712,73 @@ export function AdminDashboard() {
         )}
 
         {/* Global Live Operations Control */}
+        {activeTab === 'curriculum' && (
+          <div className="space-y-8">
+            <div className="flex justify-between items-center mb-6 border-b border-slate-200 pb-4">
+              <h3 className="text-2xl font-serif italic text-slate-900 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-slate-500" /> Curriculum Task Manager
+              </h3>
+              <button 
+                onClick={() => openTaskModal(null)}
+                className="bg-slate-900 text-white px-4 py-2 text-[10px] uppercase tracking-widest font-bold hover:bg-slate-800 transition-colors shadow-[4px_4px_0px_#1A1A1A] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#1A1A1A]"
+              >
+                + Create Task
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {curriculumTasks.map(task => (
+                <div key={task.id} className="bg-white border border-slate-300 p-6 shadow-[4px_4px_0px_#1A1A1A] flex flex-col h-full">
+                  <div className="flex-1">
+                    <span className={`inline-block px-2 py-1 text-[9px] uppercase tracking-widest font-bold mb-3 ${task.status === 'completed' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}`}>
+                      {task.status}
+                    </span>
+                    <h4 className="font-bold text-lg text-slate-900 leading-tight mb-2">{task.title}</h4>
+                    <p className="text-xs text-slate-600 mb-4">{task.description}</p>
+                    {task.attachments && task.attachments.length > 0 && (
+                      <div className="flex items-center gap-2 mb-4">
+                        <Paperclip className="w-3 h-3 text-slate-400" />
+                        <span className="text-[10px] font-mono tracking-widest uppercase text-slate-500">{task.attachments.length} attachment{task.attachments.length > 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="pt-4 border-t border-slate-100 mt-auto">
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <p className="text-[9px] font-mono uppercase tracking-widest text-slate-400">Batch</p>
+                        <p className="text-xs font-bold text-slate-700">{task.batch}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] font-mono uppercase tracking-widest text-slate-400">Due Date</p>
+                        <p className="text-xs font-bold text-slate-700">{new Date(task.dueDate).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                       <button onClick={() => handleToggleTaskStatus(task.id)} className={`flex-1 py-2 flex items-center justify-center border transition-colors text-[10px] uppercase font-bold tracking-widest ${task.status === 'completed' ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100' : 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`} title="Toggle Status">
+                         {task.status === 'completed' ? 'Mark Pending' : 'Mark Completed'}
+                       </button>
+                       <button onClick={() => openTaskModal(task)} className="w-9 flex items-center justify-center border border-slate-300 hover:bg-slate-100 transition-colors" title="Edit Task">
+                         <FileText className="w-4 h-4 text-slate-600" />
+                       </button>
+                       <button onClick={() => handleDeleteTask(task.id)} className="w-9 flex items-center justify-center border border-red-200 hover:bg-red-50 text-red-500 transition-colors" title="Delete Task">
+                         <Trash2 className="w-4 h-4" />
+                       </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {curriculumTasks.length === 0 && (
+              <div className="text-center py-12 border-2 border-dashed border-slate-300 text-slate-500">
+                <FileText className="w-8 h-8 mx-auto mb-3 text-slate-300" />
+                <p className="text-sm font-bold uppercase tracking-widest">No Curriculum Tasks</p>
+                <p className="text-xs mt-1">Create a new task to get started.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Global Live Operations Control */}
         {activeTab === 'live' && (
           <div className="space-y-8">
             <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
@@ -714,6 +857,99 @@ export function AdminDashboard() {
           </div>
         )}
       </main>
+
+      {/* Curriculum Task Modal */}
+      {isTaskModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_#1A1A1A] max-w-md w-full p-8 relative">
+            <button 
+              onClick={() => setIsTaskModalOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="font-serif italic text-2xl text-slate-900 mb-6 border-b-2 border-slate-900 inline-block pr-8 pb-1">
+              {currentTask ? 'Edit Task' : 'New Task'}
+            </h3>
+            
+            <form onSubmit={handleSaveTask} className="space-y-4">
+              <div>
+                <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-1">Title</label>
+                <input required type="text" name="title" defaultValue={currentTask?.title || ""} className="w-full px-3 py-2 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900" />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-1">Description</label>
+                <textarea required name="description" defaultValue={currentTask?.description || ""} className="w-full px-3 py-2 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 min-h-[80px]" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-1">Batch</label>
+                  <input required type="text" name="batch" defaultValue={currentTask?.batch || ""} className="w-full px-3 py-2 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900" />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-1">Due Date</label>
+                  <input required type="date" name="dueDate" defaultValue={currentTask?.dueDate || ""} className="w-full px-3 py-2 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900" />
+                </div>
+              </div>
+              
+              {/* File Uploader */}
+              <div>
+                <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-1">Attachments</label>
+                <div 
+                  className={`border-2 border-dashed ${isDragging ? 'border-slate-900 bg-slate-50' : 'border-slate-300'} p-6 flex flex-col items-center justify-center transition-colors relative`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
+                  <input type="file" multiple onChange={handleFileSelect} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*,video/*,.pdf" />
+                  <UploadCloud className="w-6 h-6 text-slate-400 mb-2" />
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-slate-500 text-center relative z-10 pointer-events-none">Drag & Drop Files Here<br/><span className="text-[9px] font-mono lowercase">or click to browse</span></p>
+                </div>
+                
+                {taskFiles.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {taskFiles.map((f, i) => (
+                      <div key={i} className="flex justify-between items-center bg-slate-50 border border-slate-200 px-3 py-2">
+                         <div className="flex items-center gap-2 overflow-hidden">
+                           <Paperclip className="w-3 h-3 text-slate-400 shrink-0" />
+                           <span className="text-xs font-mono text-slate-700 truncate">{f.name}</span>
+                         </div>
+                         <button type="button" onClick={() => removeTaskFile(i)} className="text-red-400 hover:text-red-600 transition-colors shrink-0">
+                           <X className="w-4 h-4" />
+                         </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-1">Status</label>
+                <select name="status" defaultValue={currentTask?.status || "pending"} className="w-full px-3 py-2 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900">
+                  <option value="pending">Pending</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              
+              <div className="pt-4 mt-6 border-t border-slate-200 flex justify-end gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => setIsTaskModalOpen(false)}
+                  className="px-4 py-2 text-[10px] uppercase tracking-widest font-bold text-slate-500 hover:text-slate-900 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="bg-slate-900 text-white px-6 py-2 text-[10px] uppercase tracking-widest font-bold hover:bg-slate-800 transition-colors shadow-[2px_2px_0px_#1A1A1A] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#1A1A1A]"
+                >
+                  Save Task
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Student Academic Performance Profile Modal */}
       {selectedStudent && (
