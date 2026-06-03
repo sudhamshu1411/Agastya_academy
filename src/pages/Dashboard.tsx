@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { logout } from "../lib/auth";
+import { logOut } from "../lib/firebase";
 
 import { BookOpen, Calendar, Clock, LogOut, CheckCircle2, Circle, Activity, FileText, ChevronRight, AlertCircle, Bell, CreditCard, UserCheck, Download, Menu, X } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
@@ -18,7 +18,7 @@ export function StudentDashboard() {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await logOut();
     } catch(e) {
       console.error(e);
     }

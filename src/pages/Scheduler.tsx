@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Clock, Calendar, Video, CheckCircle2, ChevronRight, User, CircleAlert, MonitorPlay, CalendarPlus, Users } from "lucide-react";
-import { initAuth, googleSignIn, logout } from "../lib/auth";
+import { initAuth, googleSignIn, logOut as logout } from "../lib/firebase";
 import { createMeetingEvent } from "../lib/calendar";
 import { saveMeeting, getMeetings, getBatches } from "../lib/store";
 

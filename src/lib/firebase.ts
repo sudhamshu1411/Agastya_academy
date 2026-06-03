@@ -76,6 +76,12 @@ export const logOut = async () => {
   try {
     await signOut(auth);
     cachedAccessToken = null;
+    try {
+      const { supabase } = await import('./supabase');
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error("Error signing out from supabase", e);
+    }
   } catch (error) {
     console.error("Error signing out", error);
     throw error;
