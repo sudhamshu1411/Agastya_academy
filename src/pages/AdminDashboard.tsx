@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Users, BarChart3, Calendar, Settings, AlertCircle, LayoutDashboard, FileText, Bell, Search, CheckCircle2, MoreHorizontal, ShieldAlert, Trash2, Menu, X, Database, Mail, FolderInput } from "lucide-react";
+import { Users, BarChart3, Calendar, Settings, AlertCircle, LayoutDashboard, FileText, Bell, Search, CheckCircle2, MoreHorizontal, ShieldAlert, Trash2, Menu, X, Database, Mail, FolderInput, Video, GraduationCap } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { getValidUsers, deleteUser, updateUserRole } from "../lib/users";
 import { getAdmissions, deleteAdmissionByEmail, updateAdmissionByEmail } from "../lib/admissions";
@@ -200,6 +200,10 @@ export function AdminDashboard() {
             <NavItem active={activeTab === 'users'} onClick={() => { setActiveTab('users'); setIsMobileMenuOpen(false); }} icon={<ShieldAlert className="w-4 h-4"/>} label="User Directory & Access" />
             <NavItem active={activeTab === 'students'} onClick={() => { setActiveTab('students'); setIsMobileMenuOpen(false); }} icon={<Users className="w-4 h-4"/>} label="Global Student List" />
             <NavItem active={activeTab === 'curriculum'} onClick={() => { setActiveTab('curriculum'); setIsMobileMenuOpen(false); }} icon={<FileText className="w-4 h-4"/>} label="Curriculum Tasks" />
+            
+            <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Academic Control</div>
+            <NavItem active={activeTab === 'academics'} onClick={() => { setActiveTab('academics'); setIsMobileMenuOpen(false); }} icon={<FileText className="w-4 h-4"/>} label="Content & Assessments" />
+            <NavItem active={activeTab === 'live'} onClick={() => { setActiveTab('live'); setIsMobileMenuOpen(false); }} icon={<Video className="w-4 h-4"/>} label="Live Operations" />
             
             <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Operations</div>
             <NavItem active={activeTab === 'analytics'} onClick={() => { setActiveTab('analytics'); setIsMobileMenuOpen(false); }} icon={<BarChart3 className="w-4 h-4"/>} label="Analytics Engine" />
@@ -555,7 +559,153 @@ export function AdminDashboard() {
           </div>
         )}
 
-        {activeTab !== 'overview' && activeTab !== 'users' && activeTab !== 'students' && (
+        {activeTab === 'academics' && (
+          <div className="space-y-8">
+            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
+                  <FileText className="w-4 h-4" /> Global Content & Assessments Registry
+                </h3>
+                <div className="flex gap-2">
+                  <span className="bg-amber-100 text-amber-900 px-3 py-2 text-[9px] uppercase font-bold tracking-widest border border-amber-200">
+                    Hierarchy: Admin Override
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Active Global Assignments/Quizzes */}
+                <div className="border border-slate-300 p-6">
+                  <h4 className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-4 pb-2 border-b border-slate-200">System-Wide Active Assessments</h4>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center group">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[9px] uppercase tracking-widest font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5">Quiz</span>
+                          <span className="text-[9px] uppercase tracking-widest font-mono text-slate-400">Owner: PF-01</span>
+                        </div>
+                        <h5 className="font-bold text-sm text-slate-900">Rotational Dynamics Quiz 4</h5>
+                        <p className="text-[10px] text-slate-500 font-mono">Alpha Batch • Due: 2 Days</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button className="text-[10px] uppercase tracking-widest font-bold text-slate-400 hover:text-slate-900 hover:underline transition-colors">Edit</button>
+                        <button className="text-[10px] uppercase tracking-widest font-bold text-red-400 hover:text-red-700 hover:underline transition-colors">Delete</button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center group">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[9px] uppercase tracking-widest font-bold text-blue-900 bg-blue-100 px-1.5 py-0.5">DPP</span>
+                          <span className="text-[9px] uppercase tracking-widest font-mono text-slate-400">Owner: PF-02</span>
+                        </div>
+                        <h5 className="font-bold text-sm text-slate-900">Mechanics DPP 08</h5>
+                        <p className="text-[10px] text-slate-500 font-mono">All Classes • Due: Tomorrow</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button className="text-[10px] uppercase tracking-widest font-bold text-slate-400 hover:text-slate-900 hover:underline transition-colors">Edit</button>
+                        <button className="text-[10px] uppercase tracking-widest font-bold text-red-400 hover:text-red-700 hover:underline transition-colors">Delete</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* System-Wide Resources */}
+                <div className="border border-slate-300 p-6">
+                  <h4 className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-4 pb-2 border-b border-slate-200">Global Storage Resources</h4>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center group">
+                      <div>
+                        <h5 className="font-bold text-sm text-slate-900 border-b border-transparent group-hover:border-slate-900 inline-block transition-colors cursor-pointer">Mechanics Final Notes.pdf</h5>
+                        <p className="text-[10px] font-mono tracking-widest text-slate-500 uppercase flex gap-2"><span>2.4 MB</span> <span>Owner: PF-01</span></p>
+                      </div>
+                      <button className="text-slate-400 hover:text-red-600 transition-colors text-[10px] uppercase tracking-widest font-bold">Purge File</button>
+                    </div>
+                    <div className="flex justify-between items-center group">
+                      <div>
+                        <h5 className="font-bold text-sm text-slate-900 border-b border-transparent group-hover:border-slate-900 inline-block transition-colors cursor-pointer">Thermodynamics Ref Sheet.pdf</h5>
+                        <p className="text-[10px] font-mono tracking-widest text-slate-500 uppercase flex gap-2"><span>1.1 MB</span> <span>Owner: PF-02</span></p>
+                      </div>
+                      <button className="text-slate-400 hover:text-red-600 transition-colors text-[10px] uppercase tracking-widest font-bold">Purge File</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Global Live Operations Control */}
+        {activeTab === 'live' && (
+          <div className="space-y-8">
+            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
+                  <Video className="w-4 h-4" /> Live Institutional Streams
+                </h3>
+                <div className="flex gap-2">
+                  <span className="bg-red-50 text-red-900 border border-red-200 px-3 py-2 text-[9px] uppercase font-bold tracking-widest flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 animate-pulse rounded-full"></span> 2 Active Sessions
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-slate-900 text-white p-6 shadow-[4px_4px_0px_#1A1A1A]">
+                   <div className="flex justify-between items-start mb-4">
+                     <div>
+                       <span className="inline-flex items-center gap-2 px-2 py-1 bg-white/10 text-white border border-white/20 text-[9px] font-bold uppercase tracking-widest mb-3">
+                         <span className="w-1.5 h-1.5 bg-red-500 animate-pulse rounded-full"></span> Live
+                       </span>
+                       <h4 className="font-serif italic text-xl">Rotational Dynamics</h4>
+                       <p className="text-[10px] text-white/50 font-mono tracking-widest uppercase mt-1">Host: PF-01 (R.P Kumar)</p>
+                     </div>
+                     <span className="font-mono text-xs opacity-70">09:00 AM</span>
+                   </div>
+                   <div className="flex gap-2 mt-6">
+                     <button className="flex-1 bg-white text-slate-900 py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-slate-200 transition-colors">Join as Observer</button>
+                     <button className="flex-1 bg-red-500/20 text-red-400 border border-red-500/50 py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-red-500 hover:text-white transition-colors">Force Terminate</button>
+                   </div>
+                </div>
+
+                <div className="bg-slate-900 text-white p-6 shadow-[4px_4px_0px_#1A1A1A]">
+                   <div className="flex justify-between items-start mb-4">
+                     <div>
+                       <span className="inline-flex items-center gap-2 px-2 py-1 bg-white/10 text-white border border-white/20 text-[9px] font-bold uppercase tracking-widest mb-3">
+                         <span className="w-1.5 h-1.5 bg-red-500 animate-pulse rounded-full"></span> Live
+                       </span>
+                       <h4 className="font-serif italic text-xl">Mechanics DPP Discussion</h4>
+                       <p className="text-[10px] text-white/50 font-mono tracking-widest uppercase mt-1">Host: PF-03 (S. Iyer)</p>
+                     </div>
+                     <span className="font-mono text-xs opacity-70">09:30 AM</span>
+                   </div>
+                   <div className="flex gap-2 mt-6">
+                     <button className="flex-1 bg-white text-slate-900 py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-slate-200 transition-colors">Join as Observer</button>
+                     <button className="flex-1 bg-red-500/20 text-red-400 border border-red-500/50 py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-red-500 hover:text-white transition-colors">Force Terminate</button>
+                   </div>
+                </div>
+                
+                <div className="bg-white border border-slate-300 p-6">
+                   <div className="flex justify-between items-start mb-4">
+                     <div>
+                       <span className="inline-flex items-center gap-2 px-2 py-1 bg-slate-100 text-slate-500 border border-slate-200 text-[9px] font-bold uppercase tracking-widest mb-3">
+                         Upcoming
+                       </span>
+                       <h4 className="font-serif italic text-slate-900 text-xl">Doubt Clearing Session</h4>
+                       <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase mt-1">Host: PF-02 (M. Kumar)</p>
+                     </div>
+                     <span className="font-mono text-xs opacity-70">02:00 PM</span>
+                   </div>
+                   <div className="flex mt-6">
+                     <button className="w-full border-t border-slate-200 pt-4 text-center text-slate-500 text-[10px] uppercase font-bold tracking-widest hover:text-red-600 transition-colors">Cancel Session (Admin Override)</button>
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab !== 'overview' && activeTab !== 'users' && activeTab !== 'students' && activeTab !== 'academics' && activeTab !== 'live' && (
           <div className="py-20 flex flex-col items-center justify-center border-2 border-dashed border-slate-300">
             <LayoutDashboard className="w-10 h-10 text-slate-300 mb-4" />
             <h3 className="text-xl font-serif italic text-slate-700 mb-2">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Module</h3>
