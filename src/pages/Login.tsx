@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ShieldCheck, AlertCircle } from "lucide-react";
-import { signInWithGoogle } from "../lib/firebase";
+import { googleSignIn } from "../lib/auth";
+import { supabase } from "../lib/supabase";
 
 export function Login() {
   const location = useLocation();
@@ -12,32 +13,43 @@ export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        const user = session.user;
+        let role = user.user_metadata?.role || "student";
+        
+        // Hardcoded hack for founder
+        if (user.email === "sudhamshu1411@gmail.com" || user.email === "sudhamshu1411@gamil.com") {
+          role = "founder";
+        }
+
+        localStorage.setItem("userRole", role);
+        localStorage.setItem("userEmail", user.email || "");
+        localStorage.setItem("userFullName", user.user_metadata?.full_name || user.email?.split('@')[0] || "");
+
+        const destination = redirect === "admissions" ? "/admissions" : (
+          role === "founder" ? "/founder/dashboard" :
+          role === "faculty" ? "/faculty/dashboard" :
+          role === "admin" ? "/admin/dashboard" : "/dashboard"
+        );
+        navigate(destination);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, redirect]);
+
   const handleGoogleLogin = async () => {
     setError(null);
     setIsLoading(true);
 
     try {
-      const user = await signInWithGoogle();
-      
-      let role = "student"; 
-      // Hardcoded hack for founder
-      if (user.email === "sudhamshu1411@gmail.com") {
-        role = "founder";
-      }
-
-      localStorage.setItem("userRole", role);
-      localStorage.setItem("userEmail", user.email || "");
-      localStorage.setItem("userFullName", user.displayName || "");
-
-      const destination = redirect === "admissions" ? "/admissions" : (
-        role === "founder" ? "/founder/dashboard" :
-        role === "faculty" ? "/faculty/dashboard" :
-        role === "admin" ? "/admin/dashboard" : "/dashboard"
-      );
-      navigate(destination);
+      await googleSignIn();
     } catch (err: any) {
       setError(err?.message || "Authentication failed.");
-    } finally {
       setIsLoading(false);
     }
   };

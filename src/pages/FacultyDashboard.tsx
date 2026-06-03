@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { logOut } from "../lib/firebase";
+import { logout } from "../lib/auth";
 
 import { BookOpen, Calendar, Clock, LogOut, CheckCircle2, Circle, Activity, FileText, ChevronRight, Users, AlertCircle, Video, Menu, X, UserCheck, UploadCloud, File, Image as ImageIcon, Film } from "lucide-react";
 import { motion } from "motion/react";
@@ -17,7 +17,7 @@ export function FacultyDashboard() {
 
   const handleLogout = async () => {
     try {
-      await logOut();
+      await logout();
     } catch(e) {
       console.error(e);
     }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { logOut } from "../lib/firebase";
+import { logout } from "../lib/auth";
 
 import { Users, BarChart3, Calendar, Settings, AlertCircle, LayoutDashboard, FileText, Bell, Search, CheckCircle2, MoreHorizontal, ShieldAlert, Trash2, Menu, X, Database, Mail, FolderInput } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -17,7 +17,7 @@ export function AdminDashboard() {
 
   const handleLogout = async () => {
     try {
-      await logOut();
+      await logout();
     } catch(e) {
       console.error(e);
     }

@@ -32,6 +32,7 @@ export const googleSignIn = async (): Promise<{ user: any; accessToken: string }
       provider: 'google',
       options: {
         scopes: 'https://www.googleapis.com/auth/calendar.events',
+        redirectTo: window.location.origin + '/login',
       }
     });
     
