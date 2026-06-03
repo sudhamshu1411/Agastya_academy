@@ -35,57 +35,6 @@ export function Login() {
           return;
         }
 
-        if (!emailVerificationStep) {
-          // Trigger email verification using backend
-          try {
-            const res = await fetch('/api/send-otp', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: formData.identifier })
-            });
-            
-            const rawText = await res.text();
-            let data;
-            try {
-              data = JSON.parse(rawText);
-            } catch (e) {
-              console.error("Invalid response from server:", rawText);
-              throw new Error("The server is not running the backend API. If you deployed this on Render or Vercel, ensure it is deployed as a 'Web Service' (Node.js) and NOT a 'Static Site'. The Start Command must be 'npm start'.");
-            }
-
-            if (!res.ok) throw new Error(data.error);
-            setIsLoading(false);
-            setEmailVerificationStep(true);
-            return;
-          } catch (err: any) {
-            setError(err.message || 'Failed to send verification email. Configuration might be missing.');
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        try {
-          const res = await fetch('/api/verify-otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: formData.identifier, otp: verificationCode })
-          });
-          
-          const rawText = await res.text();
-          let data;
-          try {
-            data = JSON.parse(rawText);
-          } catch (e) {
-            throw new Error("Backend API not found. Please ensure the app is deployed as a Web Service, not a Static Site.");
-          }
-
-          if (!res.ok) throw new Error(data.error);
-        } catch (err: any) {
-           setError(err.message || "Invalid verification code.");
-           setIsLoading(false);
-           return;
-        }
-
         setIsLoading(true);
         const { error: signUpError } = await supabase.auth.signUp({
           email: formData.identifier,
@@ -98,7 +47,11 @@ export function Login() {
           }
         });
 
-        // Add to local mock database so it shows up in Founder/Admin dash
+        if (signUpError && !signUpError.message.includes("User already registered")) {
+          console.warn("Supabase sign-up error (ignored due to local fallback):", signUpError.message);
+        }
+
+        // Add to local mock database so it shows up in Founder/Admin dash if supabase isn't connected
         const { registerUser } = await import("../lib/users");
         registerUser({
            email: formData.identifier.toLowerCase(),
@@ -106,10 +59,6 @@ export function Login() {
            fullName: formData.fullName,
            role: "new user"
         });
-
-        if (signUpError && !signUpError.message.includes("User already registered")) {
-          console.warn("Supabase sign-up error (ignored due to local fallback):", signUpError.message);
-        }
 
         const userEmail = formData.identifier.toLowerCase();
         localStorage.setItem("userRole", "new user");
@@ -282,27 +231,6 @@ export function Login() {
           )}
 
           <form onSubmit={handleLogin} className="space-y-6">
-            {mode === "signup" && emailVerificationStep ? (
-               <div>
-                 <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-900 mb-2">
-                   Verify Email
-                 </label>
-                 <p className="text-xs text-slate-500 mb-4 font-mono">An activation code has been sent to {formData.identifier}. Please check your inbox and spam folder.</p>
-                 <div className="flex flex-col gap-4">
-                    <input 
-                     type="text"
-                     required
-                     className="w-full border-b border-slate-900 bg-transparent py-3 text-lg tracking-[0.5em] focus:outline-none focus:border-slate-500 transition-colors font-mono text-center"
-                     placeholder="------"
-                     maxLength={6}
-                     value={verificationCode}
-                     onChange={(e) => setVerificationCode(e.target.value)}
-                    />
-                    <button type="button" className="text-[10px] text-slate-500 hover:text-slate-900 transition-colors tracking-wider uppercase font-bold text-left" onClick={() => setEmailVerificationStep(false)}>Edit Email</button>
-                 </div>
-               </div>
-            ) : (
-            <>
             {mode === "signup" && (
               <div>
                 <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-900 mb-2">
@@ -381,8 +309,6 @@ export function Login() {
                   <button type="button" className="text-[10px] text-emerald-600 hover:text-emerald-800 tracking-wider uppercase font-bold transition-colors">Resend OTP</button>
                 </div>
               </div>
-            )}
-            </>
             )}
 
             <button disabled={isLoading} type="submit" className="w-full bg-slate-900 text-white py-4 mt-4 text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 shadow-[4px_4px_0px_#1A1A1A] hover:shadow-[2px_2px_0px_#1A1A1A] hover:translate-y-[2px] hover:translate-x-[2px] active:shadow-none active:translate-y-[4px] active:translate-x-[4px] duration-200 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:shadow-[4px_4px_0px_#1A1A1A] disabled:hover:translate-y-0 disabled:hover:translate-x-0">

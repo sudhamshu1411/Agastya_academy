@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 export const INITIAL_USERS = [
   { email: "student@agastya.edu", phone: "9000000001", password: "Password123!", role: "student", fullName: "Demo Student" },
   { email: "admin@agastya.edu", phone: "9000000002", password: "Password123!", role: "admin", fullName: "Demo Admin" },
@@ -10,6 +12,21 @@ export const INITIAL_USERS = [
   { email: "ananya@example.com", phone: "9777755555", password: "Password123!", role: "student", fullName: "Ananya Singh" },
 ];
 
+export async function fetchProfiles() {
+  if (import.meta.env.VITE_SUPABASE_URL) {
+    const { data } = await supabase.from('profiles').select('*');
+    if (data) {
+      return data.map(d => ({
+        email: d.email,
+        fullName: d.full_name,
+        role: d.role,
+        id: d.id,
+      }));
+    }
+  }
+  return getValidUsers();
+}
+
 export function getValidUsers() {
   try {
     const data = localStorage.getItem('agastya_users');
@@ -21,7 +38,7 @@ export function getValidUsers() {
   return INITIAL_USERS;
 }
 
-export function registerUser(user: any) {
+export async function registerUser(user: any) {
   const users = getValidUsers();
   const exists = users.find((u: any) => u.email === user.email);
   if (!exists) {
@@ -30,10 +47,27 @@ export function registerUser(user: any) {
   }
 }
 
+export async function deleteUserRow(id: string, email: string) {
+  if (import.meta.env.VITE_SUPABASE_URL && id) {
+     await supabase.rpc('delete_user', { user_id: id }); // Assumes a custom function for deletion if needed
+     await supabase.from('profiles').delete().eq('id', id);
+  }
+  const users = getValidUsers();
+  const updated = users.filter((u: any) => u.email !== email);
+  localStorage.setItem('agastya_users', JSON.stringify(updated));
+}
+
 export function deleteUser(email: string) {
   const users = getValidUsers();
   const updated = users.filter((u: any) => u.email !== email);
   localStorage.setItem('agastya_users', JSON.stringify(updated));
+}
+
+export async function updateUserRoleAsync(id: string, email: string, role: string) {
+  if (import.meta.env.VITE_SUPABASE_URL && id) {
+    await supabase.from('profiles').update({ role }).eq('id', id);
+  }
+  updateUserRole(email, role);
 }
 
 export function updateUserRole(email: string, role: string) {

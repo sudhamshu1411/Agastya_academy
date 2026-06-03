@@ -12,12 +12,14 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 -- Security Policies
 
 -- 1. Users can read their own profile
+DROP POLICY IF EXISTS "Users can read own profile" ON public.profiles;
 CREATE POLICY "Users can read own profile" ON public.profiles
     AS PERMISSIVE FOR SELECT
     TO authenticated
     USING (auth.uid() = id);
 
 -- 2. Founders and Admins can read all profiles
+DROP POLICY IF EXISTS "Admins can read all profiles" ON public.profiles;
 CREATE POLICY "Admins can read all profiles" ON public.profiles
     AS PERMISSIVE FOR SELECT
     TO authenticated
@@ -28,6 +30,7 @@ CREATE POLICY "Admins can read all profiles" ON public.profiles
     );
 
 -- 3. Users can update their own profile
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile" ON public.profiles
     AS PERMISSIVE FOR UPDATE
     TO authenticated
