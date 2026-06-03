@@ -35,8 +35,61 @@ export function Login() {
           return;
         }
 
+        if (!emailVerificationStep && !import.meta.env.VITE_SUPABASE_URL) {
+          // Trigger email verification using backend (Local only)
+          try {
+            const res = await fetch('/api/send-otp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: formData.identifier })
+            });
+
+            const rawText = await res.text();
+            let data;
+            try {
+              data = JSON.parse(rawText);
+            } catch (e) {
+              console.error("Invalid response from server:", rawText);
+              throw new Error("The server is not running the backend API.");
+            }
+
+            if (!res.ok) throw new Error(data.error);
+            setIsLoading(false);
+            setEmailVerificationStep(true);
+            return;
+          } catch (err: any) {
+            setError(err.message || 'Failed to send verification email. Configuration might be missing.');
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        if (emailVerificationStep && !import.meta.env.VITE_SUPABASE_URL) {
+          try {
+            const res = await fetch('/api/verify-otp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: formData.identifier, otp: verificationCode })
+            });
+
+            const rawText = await res.text();
+            let data;
+            try {
+              data = JSON.parse(rawText);
+            } catch (e) {
+              throw new Error("Backend API not found.");
+            }
+
+            if (!res.ok) throw new Error(data.error);
+          } catch (err: any) {
+             setError(err.message || "Invalid verification code.");
+             setIsLoading(false);
+             return;
+          }
+        }
+
         setIsLoading(true);
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: formData.identifier,
           password: formData.password,
           options: {
@@ -49,9 +102,14 @@ export function Login() {
 
         if (signUpError && !signUpError.message.includes("User already registered")) {
           console.warn("Supabase sign-up error (ignored due to local fallback):", signUpError.message);
+        } else if (import.meta.env.VITE_SUPABASE_URL && signUpData?.user && !signUpData?.session) {
+          // Supabase sends a confirmation link. The user must click it to proceed.
+          setError("A confirmation email has been sent. Please check your inbox and click the link to verify your account.");
+          setIsLoading(false);
+          return;
         }
 
-        // Add to local mock database so it shows up in Founder/Admin dash if supabase isn't connected
+        // Add to local mock database so it shows up in Founder/Admin dash if no Supabase
         const { registerUser } = await import("../lib/users");
         registerUser({
            email: formData.identifier.toLowerCase(),
@@ -231,7 +289,7 @@ export function Login() {
           )}
 
           <form onSubmit={handleLogin} className="space-y-6">
-            {mode === "signup" && (
+            {mode === "signup" && !emailVerificationStep && (
               <div>
                 <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-900 mb-2">
                   Full Name
@@ -246,7 +304,7 @@ export function Login() {
                 />
               </div>
             )}
-            {(!otpStep || mode === "signup") && (
+            {((!otpStep || mode === "signup") && !emailVerificationStep) && (
             <div>
               <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-900 mb-2">
                 {mode === "signup" ? "Email Address" : (method === "email" ? "Student Email" : "Registered Mobile Number")}
@@ -262,7 +320,7 @@ export function Login() {
             </div>
             )}
             
-            {(mode === "signup" || (method === "email" && !otpStep)) && (
+            {(mode === "signup" || (method === "email" && !otpStep)) && !emailVerificationStep && (
               <div>
                 <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-900 mb-2">
                   Password
@@ -280,6 +338,24 @@ export function Login() {
                     <a href="#" className="text-[10px] text-slate-500 hover:text-slate-900 transition-colors tracking-wider uppercase font-bold">Forgot Password?</a>
                   </div>
                 )}
+              </div>
+            )}
+
+            {mode === "signup" && emailVerificationStep && (
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-900 mb-2">
+                  Verify Email Address
+                </label>
+                <p className="text-sm text-slate-500 mb-4">A confirmation code was sent to <span className="font-bold text-slate-900">{formData.identifier}</span>.</p>
+                <input 
+                  type="text"
+                  required
+                  className="w-full border-b border-slate-900 bg-transparent py-3 text-lg tracking-[0.5em] focus:outline-none focus:border-slate-500 transition-colors font-mono text-center"
+                  placeholder="------"
+                  maxLength={6}
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                />
               </div>
             )}
 
@@ -319,7 +395,7 @@ export function Login() {
                  </span>
               ) : (
                 mode === "signup" ? (
-                  <><ShieldCheck className="w-4 h-4" /> Create Account</>
+                  emailVerificationStep ? <><ShieldCheck className="w-4 h-4" /> Verify Email</> : <><ShieldCheck className="w-4 h-4" /> Create Account</>
                 ) : (
                   method === "email" ? (
                     <><ShieldCheck className="w-4 h-4" /> Secure Login</>
