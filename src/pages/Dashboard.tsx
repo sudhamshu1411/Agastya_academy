@@ -1,16 +1,30 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { logOut } from "../lib/firebase";
+
 import { BookOpen, Calendar, Clock, LogOut, CheckCircle2, Circle, Activity, FileText, ChevronRight, AlertCircle, Bell, CreditCard, UserCheck, Download, Menu, X } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { motion } from "motion/react";
-import { getMaterials, getAssessments, getNotices, getMeetings } from "../lib/store";
+import { getMaterials, getAssessments, getNotices, getMeetings, getAttendanceLogs, getStudentAttendancePercentage } from "../lib/store";
 import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function StudentDashboard() {
   const userRole = localStorage.getItem("userRole") || "student";
   const userFullName = localStorage.getItem("userFullName") || "Rahul Sharma";
+  const userEmail = localStorage.getItem("userEmail") || "student@agastya.edu";
   const [activeTab, setActiveTab] = useState(userRole === "new user" ? "demo_dashboard" : "dashboard");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logOut();
+    } catch(e) {
+      console.error(e);
+    }
+    localStorage.clear();
+    navigate("/");
+  };
 
   const [materials, setMaterials] = useState(getMaterials());
   const [assessments, setAssessments] = useState(getAssessments());
@@ -126,10 +140,10 @@ export function StudentDashboard() {
           
           <RoleSwitcher />
           <div className="p-4 border-t border-white/20">
-            <Link to="/" className="flex items-center gap-3 px-3 py-2 text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest font-semibold">
+            <button onClick={handleLogout} className="flex w-full items-center gap-3 px-3 py-2 text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest font-semibold text-left">
               <LogOut className="w-4 h-4" />
               Sign Out
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
@@ -211,7 +225,7 @@ export function StudentDashboard() {
                   <button 
                     onClick={() => {
                       alert("Opening Google Meet room for Rotational Dynamics...");
-                      window.open("https://meet.google.com", "_blank");
+                      window.open("https://meet.new", "_blank");
                     }}
                     className="bg-white text-slate-900 px-6 py-3 font-bold shadow hover:bg-slate-200 transition-colors flex items-center gap-2 text-[11px] uppercase tracking-widest"
                   >
@@ -642,72 +656,93 @@ export function StudentDashboard() {
           </div>
         )}
 
-        {displayedTab === "attendance" && (
-          <div className="mt-12 space-y-8">
-            <div className="flex items-center gap-4 mb-6">
-              <span className="text-[10px] uppercase tracking-[0.4em] font-bold text-slate-900 flex items-center gap-2">
-                <UserCheck className="w-4 h-4"/> Attendance Report
-              </span>
-              <span className="h-px flex-1 bg-slate-900"></span>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_#1A1A1A]">
-                <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-2">Overall Attendance</h3>
-                <p className="text-4xl font-serif italic text-slate-900">98.5%</p>
-                <div className="w-full bg-slate-100 h-1.5 mt-4"><div className="bg-slate-900 h-full w-[98.5%]"></div></div>
-              </div>
-              <div className="bg-emerald-50 border border-emerald-900 p-6 shadow-[8px_8px_0px_#064e3b]">
-                <h3 className="text-[10px] uppercase tracking-widest font-bold text-emerald-800 mb-2">Present Days</h3>
-                <p className="text-4xl font-serif italic text-emerald-900">142</p>
-                <p className="text-[10px] uppercase tracking-widest font-bold text-emerald-700 mt-4">Current Academic Year</p>
-              </div>
-              <div className="bg-red-50 border border-red-900 p-6 shadow-[8px_8px_0px_#7f1d1d]">
-                <h3 className="text-[10px] uppercase tracking-widest font-bold text-red-800 mb-2">Absent Days</h3>
-                <p className="text-4xl font-serif italic text-red-900">3</p>
-                <button onClick={() => alert("Initiating leave request process...")} className="mt-4 text-[10px] uppercase tracking-widest font-bold text-red-900 underline hover:text-red-700 transition">Request Leave</button>
-              </div>
-            </div>
+        {displayedTab === "attendance" && (() => {
+          const userLogs = getAttendanceLogs().filter((log: any) => log.email === userEmail);
+          const presentDaysCount = userLogs.filter((log: any) => log.status === 'Present').length;
+          const absentDaysCount = userLogs.filter((log: any) => log.status === 'Absent').length;
+          const overallAttendanceRate = getStudentAttendancePercentage(userEmail);
+          const sortedLogs = [...userLogs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-6">
-              <div className="flex justify-between items-center mb-6">
-                 <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-900">Recent Logs (Past 7 Days)</h3>
-                 <button onClick={() => alert("Downloading full attendance CSV...")} className="text-[10px] uppercase tracking-widest font-bold text-slate-500 hover:text-slate-900 transition flex items-center gap-1"><Download className="w-3 h-3"/> Export</button>
+          return (
+            <div className="mt-12 space-y-8">
+              <div className="flex items-center gap-4 mb-6">
+                <span className="text-[10px] uppercase tracking-[0.4em] font-bold text-slate-900 flex items-center gap-2">
+                  <UserCheck className="w-4 h-4"/> Attendance Report
+                </span>
+                <span className="h-px flex-1 bg-slate-900"></span>
               </div>
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b-2 border-slate-900">
-                    <th className="py-3 px-4 text-[10px] uppercase tracking-widest font-bold text-slate-500">Date</th>
-                    <th className="py-3 px-4 text-[10px] uppercase tracking-widest font-bold text-slate-500">Status</th>
-                    <th className="py-3 px-4 text-[10px] uppercase tracking-widest font-bold text-slate-500">Recorded By</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-slate-200">
-                    <td className="py-3 px-4 font-mono text-xs text-slate-900">May 30, 2026</td>
-                    <td className="py-3 px-4"><span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-[10px] uppercase tracking-widest font-bold">Present</span></td>
-                    <td className="py-3 px-4 font-mono text-xs text-slate-500">System (RFID)</td>
-                  </tr>
-                  <tr className="border-b border-slate-200">
-                    <td className="py-3 px-4 font-mono text-xs text-slate-900">May 29, 2026</td>
-                    <td className="py-3 px-4"><span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-[10px] uppercase tracking-widest font-bold">Present</span></td>
-                    <td className="py-3 px-4 font-mono text-xs text-slate-500">System (RFID)</td>
-                  </tr>
-                  <tr className="border-b border-slate-200">
-                    <td className="py-3 px-4 font-mono text-xs text-slate-900">May 28, 2026</td>
-                    <td className="py-3 px-4"><span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-[10px] uppercase tracking-widest font-bold">Present</span></td>
-                    <td className="py-3 px-4 font-mono text-xs text-slate-500">System (RFID)</td>
-                  </tr>
-                  <tr className="border-b border-slate-200">
-                    <td className="py-3 px-4 font-mono text-xs text-slate-900">May 27, 2026</td>
-                    <td className="py-3 px-4"><span className="px-2 py-1 bg-red-100 text-red-800 text-[10px] uppercase tracking-widest font-bold">Absent</span></td>
-                    <td className="py-3 px-4 font-mono text-xs text-slate-500">Alpha Batch Log</td>
-                  </tr>
-                </tbody>
-              </table>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_#1A1A1A]">
+                  <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-2">Overall Attendance</h3>
+                  <p className="text-4xl font-serif italic text-slate-900">{overallAttendanceRate}%</p>
+                  <div className="w-full bg-slate-100 h-1.5 mt-4">
+                    <div className="bg-slate-900 h-full" style={{ width: `${overallAttendanceRate}%` }}></div>
+                  </div>
+                </div>
+                <div className="bg-emerald-50 border border-emerald-900 p-6 shadow-[8px_8px_0px_#064e3b]">
+                  <h3 className="text-[10px] uppercase tracking-widest font-bold text-emerald-800 mb-2">Present Days</h3>
+                  <p className="text-4xl font-serif italic text-emerald-950">{presentDaysCount}</p>
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-emerald-700 mt-4">Current Academic Year</p>
+                </div>
+                <div className="bg-red-50 border border-red-900 p-6 shadow-[8px_8px_0px_#7f1d1d]">
+                  <h3 className="text-[10px] uppercase tracking-widest font-bold text-red-800 mb-2">Absent Days</h3>
+                  <p className="text-4xl font-serif italic text-red-950">{absentDaysCount}</p>
+                  <button onClick={() => alert("Initiating leave request process...")} className="mt-4 text-[10px] uppercase tracking-widest font-bold text-red-900 underline hover:text-red-700 transition">Request Leave</button>
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-6">
+                <div className="flex justify-between items-center mb-6">
+                   <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-900">Recent Logs (Past 7 Days)</h3>
+                   <button onClick={() => alert("Downloading full attendance CSV...")} className="text-[10px] uppercase tracking-widest font-bold text-slate-500 hover:text-slate-900 transition flex items-center gap-1"><Download className="w-3 h-3"/> Export</button>
+                </div>
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b-2 border-slate-900">
+                      <th className="py-3 px-4 text-[10px] uppercase tracking-widest font-bold text-slate-500">Date</th>
+                      <th className="py-3 px-4 text-[10px] uppercase tracking-widest font-bold text-slate-500">Status</th>
+                      <th className="py-3 px-4 text-[10px] uppercase tracking-widest font-bold text-slate-500 font-mono">Recorded By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={3} className="py-8 text-center text-slate-500 text-xs italic">
+                          No attendance logs have been recorded for your account yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      sortedLogs.map((log: any) => {
+                        const dateObj = new Date(log.date);
+                        const formattedDate = dateObj.toLocaleDateString("en-US", {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        });
+                        return (
+                          <tr key={log.id} className="border-b border-slate-200">
+                            <td className="py-3 px-4 font-mono text-xs text-slate-900">{formattedDate}</td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2 py-1 text-[10px] uppercase tracking-widest font-bold ${
+                                log.status === 'Present'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {log.status}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 font-mono text-xs text-slate-500">{log.recordedBy}</td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {displayedTab === "payments" && (
           <div className="mt-12 space-y-8">
@@ -800,20 +835,40 @@ export function StudentDashboard() {
               <button 
                 onClick={() => setViewingMaterial(null)}
                 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-red-600 transition-colors"
+                title="Close Viewer"
               >
                 Close Viewer [X]
               </button>
             </div>
-            <div className="flex-1 bg-slate-100 flex items-center justify-center">
-              <div className="text-center p-8">
-                <BookOpen className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <p className="text-xl font-serif italic text-slate-600 mb-2">Simulated Document Viewer</p>
-                <p className="text-xs uppercase font-mono tracking-widest text-slate-400">Content for {viewingMaterial.title} would appear here</p>
-              </div>
+            <div className="flex-1 bg-slate-100 flex items-center justify-center relative overflow-hidden">
+              {viewingMaterial.url ? (
+                viewingMaterial.fileType?.includes('video') ? (
+                  <video src={viewingMaterial.url} controls autoPlay className="w-full h-full object-contain bg-black" />
+                ) : viewingMaterial.fileType?.includes('image') ? (
+                  <img src={viewingMaterial.url} className="w-full h-full object-contain" alt={viewingMaterial.title} />
+                ) : (
+                  <iframe src={viewingMaterial.url} className="w-full h-full border-none" title={viewingMaterial.title} />
+                )
+              ) : (
+                <div className="text-center p-8">
+                  <BookOpen className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                  <p className="text-xl font-serif italic text-slate-600 mb-2">Simulated Document Viewer</p>
+                  <p className="text-xs uppercase font-mono tracking-widest text-slate-400">Content for {viewingMaterial.title} would appear here</p>
+                </div>
+              )}
             </div>
             <div className="p-4 border-t border-slate-900 bg-slate-50 flex justify-between items-center text-[10px] uppercase tracking-widest font-mono text-slate-500">
               <span>Agastya Portal V1.0</span>
-              <button onClick={() => alert("Downloading " + viewingMaterial.title)} className="font-bold text-slate-900 hover:underline">Download Material ↓</button>
+              <button onClick={() => {
+                if(viewingMaterial.url) {
+                  const a = document.createElement('a');
+                  a.href = viewingMaterial.url;
+                  a.download = viewingMaterial.title;
+                  a.click();
+                } else {
+                  alert("Downloading " + viewingMaterial.title);
+                }
+              }} className="font-bold text-slate-900 hover:underline">Download Material ↓</button>
             </div>
           </motion.div>
         </div>
@@ -821,11 +876,11 @@ export function StudentDashboard() {
 
       {/* Exam Viewer Modal */}
       {viewingExam && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-md p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-md p-4 md:p-12">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full h-full max-w-4xl bg-white flex flex-col shadow-[16px_16px_0px_#1A1A1A]"
+            className="w-full h-full max-w-6xl bg-white flex flex-col shadow-[16px_16px_0px_#1A1A1A]"
           >
             <div className="flex items-center justify-between p-6 bg-slate-900 text-white">
               <div>
@@ -837,11 +892,27 @@ export function StudentDashboard() {
                 <span className="font-serif text-xl text-amber-400">45:12</span>
               </div>
             </div>
-            <div className="flex-1 p-12 text-center flex flex-col items-center justify-center">
-              <Clock className="w-16 h-16 text-slate-300 mb-6" />
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Simulated Exam Portal</h2>
-              <p className="text-slate-500 text-sm max-w-sm mb-8">This is where the exam platform would securely render questions for {viewingExam.type}.</p>
-              <button onClick={() => setViewingExam(null)} className="px-8 py-3 bg-red-600 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-red-700 transition">End / Exit Exam</button>
+            <div className="flex-1 bg-slate-100 flex items-center justify-center relative overflow-hidden text-slate-900">
+              {viewingExam.url ? (
+                viewingExam.fileType?.includes('video') ? (
+                  <video src={viewingExam.url} controls autoPlay className="w-full h-full object-contain bg-black" />
+                ) : viewingExam.fileType?.includes('image') ? (
+                  <img src={viewingExam.url} className="w-full h-full object-contain" alt={viewingExam.title} />
+                ) : (
+                  <iframe src={viewingExam.url} className="w-full h-full border-none" title={viewingExam.title} />
+                )
+              ) : (
+                <div className="text-center p-12 flex flex-col items-center justify-center h-full">
+                  <Clock className="w-16 h-16 text-slate-300 mb-6" />
+                  <h2 className="text-xl font-bold text-slate-900 mb-2">Simulated Exam Portal</h2>
+                  <p className="text-slate-500 text-sm max-w-sm">This is where the exam platform would securely render questions for {viewingExam.type}.</p>
+                </div>
+              )}
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+              <button onClick={() => setViewingExam(null)} className="px-8 py-3 bg-red-600 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-red-700 transition shadow-[4px_4px_0px_#450a0a] hover:shadow-[2px_2px_0px_#450a0a]">
+                End / Exit Exam
+              </button>
             </div>
           </motion.div>
         </div>

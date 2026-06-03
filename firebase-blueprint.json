@@ -1,0 +1,167 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user in the Agastya platform (Student, Faculty, Admin).",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "faculty", "admin", "new user"] },
+        "dateJoined": { "type": "string" },
+        "performance": { "type": "string" },
+        "feeStatus": { "type": "string" },
+        "batch": { "type": "string" },
+        "lastActive": { "type": "string" }
+      },
+      "required": ["fullName", "email", "role"]
+    },
+    "Admission": {
+      "title": "Admission",
+      "description": "Admission application data.",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "location": { "type": "string" },
+        "targetCourse": { "type": "string" },
+        "lastSchool": { "type": "string" },
+        "gpa": { "type": "string" },
+        "marksheetUrl": { "type": "string" }
+      },
+      "required": ["fullName", "email", "phone"]
+    },
+    "Material": {
+      "title": "Material",
+      "description": "Study material like Notes, DPPs",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "size": { "type": "string" },
+        "batch": { "type": "string" },
+        "url": { "type": "string" },
+        "fileType": { "type": "string" },
+        "date": { "type": "string" }
+      },
+      "required": ["title", "batch"]
+    },
+    "Assessment": {
+      "title": "Assessment",
+      "description": "Assessments like Quizzes or DPPs",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "due": { "type": "string" },
+        "title": { "type": "string" },
+        "batch": { "type": "string" },
+        "color": { "type": "string" },
+        "url": { "type": "string" },
+        "fileType": { "type": "string" }
+      },
+      "required": ["title", "type", "batch"]
+    },
+    "Notice": {
+      "title": "Notice",
+      "description": "System notices",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "priority": { "type": "string" },
+        "roles": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["title", "date"]
+    },
+    "Meeting": {
+      "title": "Meeting",
+      "description": "Scheduled meetings or live classes",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "attendees": { "type": "string" },
+        "type": { "type": "string" },
+        "link": { "type": "string" },
+        "batch": { "type": "string" }
+      },
+      "required": ["title", "date"]
+    },
+    "Intervention": {
+      "title": "Intervention",
+      "description": "Student interventions noted by faculty",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "metrics": { "type": "string" },
+        "flag": { "type": "string" },
+        "recommendedAction": { "type": "string" }
+      },
+      "required": ["email", "name"]
+    },
+    "Batch": {
+      "title": "Batch",
+      "description": "Student batches/cohorts",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "syllabus": { "type": "string" },
+        "students": { "type": "integer" }
+      },
+      "required": ["name"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Student attendance records",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "batch": { "type": "string" },
+        "email": { "type": "string" },
+        "status": { "type": "string" },
+        "recordedBy": { "type": "string" }
+      },
+      "required": ["email", "date"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Verified users with roles."
+    },
+    "admissions/{admissionId}": {
+      "schema": "Admission",
+      "description": "Admission applications."
+    },
+    "materials/{materialId}": {
+      "schema": "Material",
+      "description": "Study materials."
+    },
+    "assessments/{assessmentId}": {
+      "schema": "Assessment",
+      "description": "Assessments and quizzes."
+    },
+    "notices/{noticeId}": {
+      "schema": "Notice",
+      "description": "Announcements."
+    },
+    "meetings/{meetingId}": {
+      "schema": "Meeting",
+      "description": "Meetings."
+    },
+    "interventions/{interventionId}": {
+      "schema": "Intervention",
+      "description": "Interventions."
+    },
+    "batches/{batchId}": {
+      "schema": "Batch",
+      "description": "Batches."
+    },
+    "attendance/{attendanceId}": {
+      "schema": "Attendance",
+      "description": "Attendance logs."
+    }
+  }
+}

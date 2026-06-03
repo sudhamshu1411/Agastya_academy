@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Clock, Calendar, Video, CheckCircle2, ChevronRight, User, CircleAlert, MonitorPlay, CalendarPlus, Users } from "lucide-react";
-import { initAuth, googleSignIn, logout } from "../lib/auth";
+import { initAuth, googleSignIn, logOut as logout } from "../lib/firebase";
 import { createMeetingEvent } from "../lib/calendar";
-import { saveMeeting, getMeetings } from "../lib/store";
+import { saveMeeting, getMeetings, getBatches } from "../lib/store";
 
 export function Scheduler() {
   const navigate = useNavigate();
@@ -19,6 +19,7 @@ export function Scheduler() {
   const [durationMinutes, setDurationMinutes] = useState(30);
   
   const [scheduledMeetings, setScheduledMeetings] = useState<any[]>(getMeetings());
+  const [globalBatches, setGlobalBatches] = useState<any[]>(getBatches());
 
   useEffect(() => {
     const unsubscribe = initAuth(
@@ -55,12 +56,7 @@ export function Scheduler() {
     { id: 4, name: "Priya Singh", batch: "Target NEET 2026 - Alpha", lastPTM: "2026-05-10" },
   ];
 
-  const batches = [
-    { id: "b1", name: "Target NEET 2026 - Alpha" },
-    { id: "b2", name: "Target NEET 2026 - Beta" }
-  ];
-  
-  const targets = meetingType === "Live Class" ? batches : students;
+  const targets = meetingType === "Live Class" ? globalBatches : students;
 
   const handleSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,7 +112,7 @@ export function Scheduler() {
         <div className="flex items-center gap-4">
           <Link to="/" className="font-serif italic text-2xl tracking-tighter leading-none hover:opacity-80 transition-opacity">Agastya</Link>
           <span className="h-4 w-px bg-white/30"></span>
-          <span className="text-[10px] uppercase tracking-[0.3em] font-bold opacity-60 mt-1">Admin // Scheduler</span>
+          <span className="text-[10px] uppercase tracking-[0.3em] font-bold opacity-60 mt-1">Workspace // Scheduler</span>
         </div>
         <div className="flex items-center gap-4">
           {!needsAuth && user && (
@@ -299,7 +295,7 @@ export function Scheduler() {
                             {meeting.date} at {meeting.time}
                           </p>
                         </div>
-                        {meeting.link && meeting.link !== "No Link generated" && (
+                        {meeting.link && meeting.link.startsWith("http") ? (
                           <a 
                             href={meeting.link} 
                             target="_blank" 
@@ -308,6 +304,13 @@ export function Scheduler() {
                           >
                             <Video className="w-3 h-3" /> Meet Link
                           </a>
+                        ) : (
+                          <button 
+                            onClick={() => alert("Meeting link is not generated for this session.")}
+                            className="bg-slate-100 text-slate-400 px-4 py-2 border border-slate-200 text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 w-fit shrink-0 cursor-not-allowed"
+                          >
+                            <Video className="w-3 h-3" /> No Link
+                          </button>
                         )}
                       </div>
                     ))}

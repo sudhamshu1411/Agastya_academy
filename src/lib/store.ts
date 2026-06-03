@@ -39,6 +39,30 @@ export async function revokeMaterial(id: number) {
   }
 }
 
+export function getBatches() {
+  try {
+    const data = localStorage.getItem('agastya_batches');
+    if (data) return JSON.parse(data);
+  } catch (e) {}
+  const initial = [
+    { id: 1, name: "Alpha Batch (NEET RM)", size: 15, avgScore: 88, syllabus: "Mechanics, Rotational Dynamics" },
+    { id: 2, name: "Beta Batch", size: 14, avgScore: 74, syllabus: "Thermodynamics" }
+  ];
+  return initial;
+}
+
+export async function saveBatch(batch: any) {
+  const batches = getBatches();
+  batches.push(batch);
+  localStorage.setItem('agastya_batches', JSON.stringify(batches));
+  window.dispatchEvent(new Event('storage'));
+  if (import.meta.env.VITE_SUPABASE_URL) {
+     try {
+       await supabase.from('batches').insert([batch]);
+     } catch (e) { console.warn("Supabase insert failed", e); }
+  }
+}
+
 export function getAssessments() {
   try {
     const data = localStorage.getItem('agastya_assessments');
@@ -145,16 +169,24 @@ export async function logIntervention(id: number, notes: string) {
 }
 
 export function getMeetings() {
-  try {
-    const data = localStorage.getItem('agastya_meetings');
-    if (data) return JSON.parse(data);
-  } catch (e) {}
   const todayDate = new Date().toISOString().split('T')[0];
   const initial = [
-    { id: "1", title: "Live Class: Rotational Dynamics", type: "Live Class", time: "09:00 AM", date: todayDate, durationMinutes: 60, target: "Target NEET 2026 - Alpha", link: "https://meet.google.com/abc-defg-hij", completed: false },
-    { id: "2", title: "PTM - Rahul Sharma", type: "PTM", time: "05:00 PM", date: todayDate, durationMinutes: 30, target: "Rahul Sharma", link: "https://meet.google.com/xyz-uvwx-qrs", completed: false }
+    { id: "1", title: "Live Class: Rotational Dynamics", type: "Live Class", time: "09:00 AM", date: todayDate, durationMinutes: 60, target: "Target NEET 2026 - Alpha", link: "https://meet.new", completed: false },
+    { id: "2", title: "PTM - Rahul Sharma", type: "PTM", time: "05:00 PM", date: todayDate, durationMinutes: 30, target: "Rahul Sharma", link: "https://meet.new", completed: false }
   ];
-  return initial;
+  let meetings = initial;
+  try {
+    const data = localStorage.getItem('agastya_meetings');
+    if (data) {
+      meetings = JSON.parse(data);
+    }
+  } catch (e) {}
+
+  return meetings.map((m: any) => ({
+    ...m,
+    link: m.link && m.link.includes('abc-defg-hij') ? 'https://meet.new' : 
+          m.link && m.link.includes('xyz-uvwx-qrs') ? 'https://meet.new' : m.link
+  }));
 }
 
 export async function saveMeeting(meeting: any) {
@@ -200,5 +232,68 @@ export async function syncAll() {
 
 // Kick off background sync at module load
 syncAll();
+
+export function getAttendanceLogs() {
+  try {
+    const data = localStorage.getItem('agastya_attendance');
+    if (data) return JSON.parse(data);
+  } catch (e) {}
+  
+  // Create beautiful, rich initial mock historical data so the logs look alive and functional
+  const getPastDate = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return d.toISOString().split('T')[0];
+  };
+  
+  const initial = [
+    { id: "att-1", email: "student@agastya.edu", studentName: "Rahul Sharma", batch: "Alpha RM", date: getPastDate(1), status: "Present", recordedBy: "Demo Faculty" },
+    { id: "att-2", email: "student@agastya.edu", studentName: "Rahul Sharma", batch: "Alpha RM", date: getPastDate(2), status: "Present", recordedBy: "Demo Faculty" },
+    { id: "att-3", email: "student@agastya.edu", studentName: "Rahul Sharma", batch: "Alpha RM", date: getPastDate(3), status: "Present", recordedBy: "Demo Faculty" },
+    { id: "att-4", email: "student@agastya.edu", studentName: "Rahul Sharma", batch: "Alpha RM", date: getPastDate(4), status: "Absent", recordedBy: "Demo Faculty" },
+    { id: "att-5", email: "student@agastya.edu", studentName: "Rahul Sharma", batch: "Alpha RM", date: getPastDate(5), status: "Present", recordedBy: "Demo Faculty" },
+    { id: "att-6", email: "student@agastya.edu", studentName: "Rahul Sharma", batch: "Alpha RM", date: getPastDate(6), status: "Present", recordedBy: "Demo Faculty" },
+    { id: "att-7", email: "student@agastya.edu", studentName: "Rahul Sharma", batch: "Alpha RM", date: getPastDate(7), status: "Present", recordedBy: "System (RFID)" },
+    
+    { id: "att-8", email: "priyanka@example.com", studentName: "Priyanka Desai", batch: "Alpha RM", date: getPastDate(1), status: "Present", recordedBy: "Demo Faculty" },
+    { id: "att-9", email: "priyanka@example.com", studentName: "Priyanka Desai", batch: "Alpha RM", date: getPastDate(2), status: "Present", recordedBy: "Demo Faculty" },
+    { id: "att-10", email: "priyanka@example.com", studentName: "Priyanka Desai", batch: "Alpha RM", date: getPastDate(3), status: "Absent", recordedBy: "Demo Faculty" },
+    
+    { id: "att-11", email: "sanya@example.com", studentName: "Sanya Malik", batch: "Alpha RM", date: getPastDate(1), status: "Present", recordedBy: "Demo Faculty" },
+    { id: "att-12", email: "sanya@example.com", studentName: "Sanya Malik", batch: "Alpha RM", date: getPastDate(2), status: "Present", recordedBy: "Demo Faculty" },
+
+    { id: "att-13", email: "ananya@example.com", studentName: "Ananya Singh", batch: "Gamma", date: getPastDate(1), status: "Present", recordedBy: "Demo Faculty" },
+    { id: "att-14", email: "ananya@example.com", studentName: "Ananya Singh", batch: "Gamma", date: getPastDate(2), status: "Absent", recordedBy: "Demo Faculty" },
+  ];
+  
+  localStorage.setItem('agastya_attendance', JSON.stringify(initial));
+  return initial;
+}
+
+export function saveAttendanceLogs(newRecords: any[]) {
+  const logs = getAttendanceLogs();
+  
+  // Avoid duplicating records for the exact same email + date combination
+  const keys = new Set(newRecords.map(r => `${r.email}_${r.date}`));
+  const filteredExisting = logs.filter((l: any) => !keys.has(`${l.email}_${l.date}`));
+  const updated = [...newRecords, ...filteredExisting];
+  
+  localStorage.setItem('agastya_attendance', JSON.stringify(updated));
+  window.dispatchEvent(new Event('storage'));
+}
+
+export function getStudentAttendancePercentage(email: string): number {
+  const logs = getAttendanceLogs();
+  const studentLogs = logs.filter((log: any) => log.email === email);
+  if (studentLogs.length === 0) {
+    if (email.includes("priyanka")) return 96.0;
+    if (email.includes("ananya")) return 90.0;
+    if (email.includes("student@agastya") || email.includes("student")) return 98.0;
+    return 95.0;
+  }
+  const presentCount = studentLogs.filter((log: any) => log.status === 'Present').length;
+  return parseFloat(((presentCount / studentLogs.length) * 100).toFixed(1));
+}
+
 
 

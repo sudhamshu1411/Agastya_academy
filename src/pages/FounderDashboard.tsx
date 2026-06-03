@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { logOut } from "../lib/firebase";
+
 import { Building2, Users, GraduationCap, DollarSign, Settings, Database, Search, ShieldCheck, Download, Lock, FileOutput, Terminal, Video, FileText, Activity, UserPlus, Calendar } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import jsPDF from "jspdf";
@@ -11,10 +13,21 @@ import { ShieldAlert, Trash2, Edit2, Menu, X } from "lucide-react";
 import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function FounderDashboard() {
+  const navigate = useNavigate();
   const userFullName = localStorage.getItem("userFullName") || "Director";
   const [activeTab, setActiveTab] = useState("executive");
   const [systemLocked, setSystemLocked] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await logOut();
+    } catch(e) {
+      console.error(e);
+    }
+    localStorage.clear();
+    navigate("/");
+  };
   const [auditFilter, setAuditFilter] = useState("All");
   const [admissionsLogs, setAdmissionsLogs] = useState<any[]>([]);
   const [portalUsers, setPortalUsers] = useState<any[]>([]);
@@ -249,9 +262,9 @@ export function FounderDashboard() {
                 <p className="text-[9px] text-[#D4AF37] font-mono">Level 0 Clearance</p>
               </div>
             </div>
-            <Link to="/login" className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-[#D4AF37] hover:bg-[#F3E5AB] transition-colors text-[10px] uppercase tracking-widest font-bold mt-4">
+            <button onClick={handleLogout} className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-[#D4AF37] hover:bg-[#F3E5AB] transition-colors text-[10px] uppercase tracking-widest font-bold mt-4">
               Exit Secure Portal
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
