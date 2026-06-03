@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { logOut } from "../lib/firebase";
-
+import { Link } from "react-router-dom";
 import { BookOpen, Calendar, Clock, LogOut, CheckCircle2, Circle, Activity, FileText, ChevronRight, AlertCircle, Bell, CreditCard, UserCheck, Download, Menu, X } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { motion } from "motion/react";
@@ -14,17 +12,6 @@ export function StudentDashboard() {
   const userEmail = localStorage.getItem("userEmail") || "student@agastya.edu";
   const [activeTab, setActiveTab] = useState(userRole === "new user" ? "demo_dashboard" : "dashboard");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    try {
-      await logOut();
-    } catch(e) {
-      console.error(e);
-    }
-    localStorage.clear();
-    navigate("/");
-  };
 
   const [materials, setMaterials] = useState(getMaterials());
   const [assessments, setAssessments] = useState(getAssessments());
@@ -140,10 +127,10 @@ export function StudentDashboard() {
           
           <RoleSwitcher />
           <div className="p-4 border-t border-white/20">
-            <button onClick={handleLogout} className="flex w-full items-center gap-3 px-3 py-2 text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest font-semibold text-left">
+            <Link to="/" className="flex items-center gap-3 px-3 py-2 text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest font-semibold">
               <LogOut className="w-4 h-4" />
               Sign Out
-            </button>
+            </Link>
           </div>
         </div>
       </aside>
@@ -225,7 +212,7 @@ export function StudentDashboard() {
                   <button 
                     onClick={() => {
                       alert("Opening Google Meet room for Rotational Dynamics...");
-                      window.open("https://meet.new", "_blank");
+                      window.open("https://meet.google.com", "_blank");
                     }}
                     className="bg-white text-slate-900 px-6 py-3 font-bold shadow hover:bg-slate-200 transition-colors flex items-center gap-2 text-[11px] uppercase tracking-widest"
                   >

@@ -87,6 +87,30 @@ app.post('/api/verify-otp', async (req, res) => {
   }
 });
 
+app.post('/api/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
+  }
+
+  const founderEmail = process.env.FOUNDER_EMAIL || 'sudhamshu1411@gmail.com';
+  const founderPassword = process.env.FOUNDER_PASSWORD || 'Password123';
+
+  if (email.toLowerCase() === founderEmail.toLowerCase() && password === founderPassword) {
+    return res.json({
+      success: true,
+      user: {
+        email: founderEmail,
+        role: 'founder',
+        fullName: 'Sudhamshu Founder',
+        isSuperAdmin: true,
+      }
+    });
+  }
+
+  return res.status(401).json({ error: 'Invalid credentials' });
+});
+
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import('vite');

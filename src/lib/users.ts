@@ -19,7 +19,7 @@ export async function fetchProfiles() {
       return data.map(d => ({
         email: d.email,
         fullName: d.full_name,
-        role: (d.email === 'sudhamshu1411@gmail.com' || d.email === 'sudhamshu1411@gamil.com') ? 'founder' : d.role,
+        role: d.role,
         id: d.id,
       }));
     }
@@ -41,12 +41,6 @@ export function getValidUsers() {
       });
       localStorage.setItem('agastya_users', JSON.stringify(users));
 
-      users = users.map((u: any) => {
-        if (u.email === 'sudhamshu1411@gmail.com' || u.email === 'sudhamshu1411@gamil.com') {
-          return { ...u, role: 'founder' };
-        }
-        return u;
-      });
       return users;
     }
   } catch (e) {

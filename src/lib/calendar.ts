@@ -1,4 +1,4 @@
-import { getAccessToken } from './firebase';
+import { getAccessToken } from './auth';
 
 export const createMeetingEvent = async (title: string, description: string, startTime: string, durationMinutes: number) => {
   const token = await getAccessToken();

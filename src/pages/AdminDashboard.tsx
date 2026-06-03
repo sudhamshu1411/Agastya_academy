@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { logOut } from "../lib/firebase";
-
+import { Link } from "react-router-dom";
 import { Users, BarChart3, Calendar, Settings, AlertCircle, LayoutDashboard, FileText, Bell, Search, CheckCircle2, MoreHorizontal, ShieldAlert, Trash2, Menu, X, Database, Mail, FolderInput } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { getValidUsers, deleteUser, updateUserRole } from "../lib/users";
@@ -10,20 +8,9 @@ import { getNotices, saveNotice, getInterventions, logIntervention, getStudentAt
 import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function AdminDashboard() {
-  const navigate = useNavigate();
   const userFullName = localStorage.getItem("userFullName") || "M. Kumar";
   const [activeTab, setActiveTab] = useState("overview");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const handleLogout = async () => {
-    try {
-      await logOut();
-    } catch(e) {
-      console.error(e);
-    }
-    localStorage.clear();
-    navigate("/");
-  };
 
   const [portalUsers, setPortalUsers] = useState<any[]>([]);
   const [admissionsLogs, setAdmissionsLogs] = useState<any[]>([]);
@@ -235,9 +222,9 @@ export function AdminDashboard() {
                 <p className="text-[9px] text-white/60 font-mono">Super Admin</p>
               </div>
             </div>
-            <button onClick={handleLogout} className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-white hover:bg-slate-200 transition-colors text-[10px] uppercase tracking-widest font-bold mt-4">
+            <Link to="/login" className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-white hover:bg-slate-200 transition-colors text-[10px] uppercase tracking-widest font-bold mt-4">
               Sign Out
-            </button>
+            </Link>
           </div>
         </div>
       </aside>

@@ -3,9 +3,12 @@ import { Link } from 'react-router-dom';
 import { ShieldAlert, User, ShieldCheck, GraduationCap } from 'lucide-react';
 
 export function RoleSwitcher() {
-  const userEmail = localStorage.getItem('userEmail');
+  const isSuperAdmin = localStorage.getItem('isSuperAdmin') === 'true';
+  const role = localStorage.getItem('userRole');
   
-  if (userEmail !== 'sudhamshu1411@gmail.com') return null;
+  // Show RoleSwitcher only to the actual founder (super admin).
+  // If they switch roles, they still retain the 'isSuperAdmin' flag to switch back.
+  if (!isSuperAdmin) return null;
 
   const setRole = (role: string) => {
     localStorage.setItem('userRole', role);

@@ -169,24 +169,16 @@ export async function logIntervention(id: number, notes: string) {
 }
 
 export function getMeetings() {
-  const todayDate = new Date().toISOString().split('T')[0];
-  const initial = [
-    { id: "1", title: "Live Class: Rotational Dynamics", type: "Live Class", time: "09:00 AM", date: todayDate, durationMinutes: 60, target: "Target NEET 2026 - Alpha", link: "https://meet.new", completed: false },
-    { id: "2", title: "PTM - Rahul Sharma", type: "PTM", time: "05:00 PM", date: todayDate, durationMinutes: 30, target: "Rahul Sharma", link: "https://meet.new", completed: false }
-  ];
-  let meetings = initial;
   try {
     const data = localStorage.getItem('agastya_meetings');
-    if (data) {
-      meetings = JSON.parse(data);
-    }
+    if (data) return JSON.parse(data);
   } catch (e) {}
-
-  return meetings.map((m: any) => ({
-    ...m,
-    link: m.link && m.link.includes('abc-defg-hij') ? 'https://meet.new' : 
-          m.link && m.link.includes('xyz-uvwx-qrs') ? 'https://meet.new' : m.link
-  }));
+  const todayDate = new Date().toISOString().split('T')[0];
+  const initial = [
+    { id: "1", title: "Live Class: Rotational Dynamics", type: "Live Class", time: "09:00 AM", date: todayDate, durationMinutes: 60, target: "Target NEET 2026 - Alpha", link: "https://meet.google.com/abc-defg-hij", completed: false },
+    { id: "2", title: "PTM - Rahul Sharma", type: "PTM", time: "05:00 PM", date: todayDate, durationMinutes: 30, target: "Rahul Sharma", link: "https://meet.google.com/xyz-uvwx-qrs", completed: false }
+  ];
+  return initial;
 }
 
 export async function saveMeeting(meeting: any) {
