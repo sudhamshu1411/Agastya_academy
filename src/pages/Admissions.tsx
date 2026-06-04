@@ -3,25 +3,21 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { CheckCircle2, AlertCircle, UserCircle2, ShieldCheck } from "lucide-react";
 import { saveAdmission } from "../lib/admissions";
-import { getValidUsers, registerUser } from "../lib/users";
+import { supabase } from "../supabaseClient";
 
 export function Admissions() {
-  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("userRole"));
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userSession, setUserSession] = useState<any>(null);
   const [step, setStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [appId, setAppId] = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // If not authenticated, we don't auto-redirect, we just leave them on Step 1.
-    // If they ARE authenticated and on Step 1, we let them see they are signed in (Step 1 Portal Account).
-  }, [isAuthenticated, navigate]);
-
   const [formData, setFormData] = useState({
-    firstName: localStorage.getItem("userFullName")?.split(" ")[0] || "",
-    lastName: localStorage.getItem("userFullName")?.split(" ").slice(1).join(" ") || "",
-    email: localStorage.getItem("userEmail") || "",
-    mobile: localStorage.getItem("userPhone") || "",
+    firstName: "",
+    lastName: "",
+    email: "",
+    mobile: "",
     parentName: "",
     school: "",
     grade: "",
@@ -29,18 +25,31 @@ export function Admissions() {
     batch: ""
   });
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+      setUserSession(session);
+      
+      if (session) {
+        const full_name = session.user.user_metadata?.full_name || "";
+        setFormData(prev => ({
+          ...prev,
+          firstName: full_name.split(" ")[0] || "",
+          lastName: full_name.split(" ").slice(1).join(" ") || "",
+          email: session.user.email || ""
+        }));
+      }
+    });
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSignOut = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userPhone");
-    localStorage.removeItem("userFullName");
-    localStorage.removeItem("isSuperAdmin");
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
     setIsAuthenticated(false);
+    setUserSession(null);
     setFormData(prev => ({
       ...prev,
       firstName: "",
@@ -167,8 +176,8 @@ export function Admissions() {
                         </div>
                         <div>
                           <p className="text-xs uppercase tracking-widest text-slate-500 mb-1">Signed in as</p>
-                          <p className="font-serif italic text-xl text-slate-900">{localStorage.getItem("userFullName") || "User"}</p>
-                          <p className="text-sm font-mono text-slate-600">{localStorage.getItem("userEmail") || "user@example.com"}</p>
+                          <p className="font-serif italic text-xl text-slate-900">{userSession?.user?.user_metadata?.full_name || "User"}</p>
+                          <p className="text-sm font-mono text-slate-600">{userSession?.user?.email || "user@example.com"}</p>
                         </div>
                         <ShieldCheck className="w-8 h-8 text-emerald-600 ml-auto opacity-50" />
                       </div>

@@ -1,58 +1,40 @@
 import { createClient } from '@supabase/supabase-js';
-import { getValidUsers, registerUser } from './users';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const rawUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const rawKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-export const supabase = (supabaseUrl && supabaseKey) 
-  ? createClient(supabaseUrl, supabaseKey) 
-  : ({
-      auth: {
-        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-        signInWithOAuth: async () => { throw new Error('OAuth is not supported in local demo mode.') },
-        getSession: async () => ({ data: { session: null } }),
-        signOut: async () => {
-          localStorage.removeItem('userEmail');
-          localStorage.removeItem('userRole');
-          localStorage.removeItem('userFullName');
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('isSuperAdmin');
-          return { error: null };
-        },
-        signInWithPassword: async ({ email, password }: any) => {
-          const users = getValidUsers();
-          const user = users.find((u: any) => u.email === email && u.password === password);
-          if (user) {
-            return {
-              data: {
-                user: { email: user.email, user_metadata: { role: user.role, full_name: user.fullName } }
-              },
-              error: null
-            };
-          }
-          return { data: null, error: { message: "Invalid login credentials" } };
-        },
-        signUp: async ({ email, password, options }: any) => {
-          const users = getValidUsers();
-          if (users.find((u: any) => u.email === email)) {
-            return { data: null, error: { message: "User already exists with this email." } };
-          }
-          const newUser = {
-            email,
-            password,
-            fullName: options?.data?.full_name || "New User",
-            role: options?.data?.role || "new user",
-            phone: ""
-          };
-          registerUser(newUser);
-          return {
-            data: {
-              user: { email: newUser.email, user_metadata: { role: newUser.role, full_name: newUser.fullName } }
-            },
-            error: null
-          };
-        },
-      }
-    } as any);
+if (!rawUrl || !rawKey) {
+  console.error("⚠️ SUPABASE CREDENTIALS MISSING: Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in your environment configuration.");
+}
+
+// Clean and validate URL
+let safeUrl = rawUrl.replace(/^["']|["']$/g, '').trim();
+if (safeUrl) {
+  // If user pasted url with extra spaces or newlines inside, clean it up
+  safeUrl = safeUrl.replace(/\s+/g, '');
+  if (!safeUrl.startsWith('http://') && !safeUrl.startsWith('https://')) {
+    safeUrl = 'https://' + safeUrl;
+  }
+  
+  try {
+    const parsedUrl = new URL(safeUrl);
+    // Force only the origin (e.g. https://xxx.supabase.co)
+    // This removes any accidental /rest/v1 or /auth/v1 from the base URL!
+    safeUrl = parsedUrl.origin;
+  } catch (err) {
+    // Fallback if URL parsing fails
+    safeUrl = safeUrl.replace(/\/+$/, '');
+  }
+} else {
+  safeUrl = 'https://placeholder.supabase.co';
+}
+
+export const _testUrl = safeUrl;
+export const supabase = createClient(
+  safeUrl,
+  rawKey.replace(/^["']|["']$/g, '').trim() || 'placeholder'
+);
+
+
 
 

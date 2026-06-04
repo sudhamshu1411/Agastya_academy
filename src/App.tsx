@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { PublicLayout } from "./components/layout/PublicLayout";
+import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 import { Home } from "./pages/Home";
 import { StudentDashboard } from "./pages/Dashboard";
 import { Login } from "./pages/Login";
@@ -36,20 +37,20 @@ export default function App() {
         <Route path="/login" element={<Login />} />
 
         {/* Protected Dashboard Route Stub */}
-        <Route path="/dashboard" element={<StudentDashboard />} />
+        <Route path="/dashboard" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
         
         {/* Admin Routes */}
         <Route path="/admin" element={<Navigate to="/admin/dashboard" />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/schedule" element={<Scheduler />} />
-        <Route path="/faculty/schedule" element={<Scheduler />} />
-        <Route path="/founder/schedule" element={<Scheduler />} />
+        <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/schedule" element={<ProtectedRoute><Scheduler /></ProtectedRoute>} />
+        <Route path="/faculty/schedule" element={<ProtectedRoute><Scheduler /></ProtectedRoute>} />
+        <Route path="/founder/schedule" element={<ProtectedRoute><Scheduler /></ProtectedRoute>} />
 
         {/* Faculty Routes */}
-        <Route path="/faculty/dashboard" element={<FacultyDashboard />} />
+        <Route path="/faculty/dashboard" element={<ProtectedRoute><FacultyDashboard /></ProtectedRoute>} />
 
         {/* Founder Routes */}
-        <Route path="/founder/dashboard" element={<FounderDashboard />} />
+        <Route path="/founder/dashboard" element={<ProtectedRoute><FounderDashboard /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

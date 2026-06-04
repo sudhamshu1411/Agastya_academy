@@ -3,14 +3,27 @@ import { Link } from "react-router-dom";
 import { BookOpen, Calendar, Clock, LogOut, CheckCircle2, Circle, Activity, FileText, ChevronRight, AlertCircle, Bell, CreditCard, UserCheck, Download, Menu, X } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { motion } from "motion/react";
+import { supabase } from "../supabaseClient";
 import { getMaterials, getAssessments, getNotices, getMeetings, getAttendanceLogs, getStudentAttendancePercentage } from "../lib/store";
 import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function StudentDashboard() {
-  const userRole = localStorage.getItem("userRole") || "student";
-  const userFullName = localStorage.getItem("userFullName") || "Rahul Sharma";
-  const userEmail = localStorage.getItem("userEmail") || "student@agastya.edu";
-  const [activeTab, setActiveTab] = useState(userRole === "new user" ? "demo_dashboard" : "dashboard");
+  const [sessionUser, setSessionUser] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user;
+      setSessionUser(user || null);
+      if (user?.user_metadata?.role === "new user") {
+        setActiveTab("demo_dashboard");
+      }
+    });
+  }, []);
+
+  const userRole = sessionUser?.user_metadata?.role || "student";
+  const userFullName = sessionUser?.user_metadata?.full_name || "Rahul Sharma";
+  const userEmail = sessionUser?.email || "student@agastya.edu";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [materials, setMaterials] = useState(getMaterials());

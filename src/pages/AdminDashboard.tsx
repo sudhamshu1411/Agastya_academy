@@ -2,13 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Users, BarChart3, Calendar, Settings, AlertCircle, LayoutDashboard, FileText, Bell, Search, CheckCircle2, MoreHorizontal, ShieldAlert, Trash2, Menu, X, Database, Mail, FolderInput, Video, GraduationCap, UploadCloud, Paperclip } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { getValidUsers, deleteUser, updateUserRole } from "../lib/users";
+import { fetchProfiles, deleteUserRow, updateUserRoleAsync } from "../lib/users";
 import { getAdmissions, deleteAdmissionByEmail, updateAdmissionByEmail } from "../lib/admissions";
 import { getNotices, saveNotice, getInterventions, logIntervention, getStudentAttendancePercentage } from "../lib/store";
 import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function AdminDashboard() {
-  const userFullName = localStorage.getItem("userFullName") || "M. Kumar";
+  const userFullName = "M. Kumar";
   const [activeTab, setActiveTab] = useState("overview");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -105,7 +105,7 @@ export function AdminDashboard() {
   };
 
   useEffect(() => {
-    setPortalUsers(getValidUsers());
+    fetchProfiles().then(setPortalUsers);
     setAdmissionsLogs(getAdmissions());
     setNotices(getNotices());
     setAlerts(getInterventions().filter((i:any) => !i.logged));
@@ -118,16 +118,18 @@ export function AdminDashboard() {
     );
   };
 
-  const handleDeleteUser = (email: string) => {
-    deleteUser(email);
+  const handleDeleteUser = async (email: string) => {
+    const user = portalUsers.find(u => u.email === email);
+    if (user?.id) await deleteUserRow(user.id, email);
     deleteAdmissionByEmail(email);
-    setPortalUsers(getValidUsers());
+    fetchProfiles().then(setPortalUsers);
     setAdmissionsLogs(getAdmissions());
   };
 
-  const handleUpdateUserRole = (email: string, role: string) => {
-    updateUserRole(email, role);
-    setPortalUsers(getValidUsers());
+  const handleUpdateUserRole = async (email: string, role: string) => {
+    const user = portalUsers.find(u => u.email === email);
+    if (user?.id) await updateUserRoleAsync(user.id, email, role);
+    fetchProfiles().then(setPortalUsers);
   };
 
   const handleResolveAlert = (id: number) => {

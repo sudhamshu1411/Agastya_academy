@@ -66,8 +66,7 @@ export function Contact() {
               <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-6 flex items-center gap-2">
                 <Mail className="w-4 h-4" /> Digital
               </h3>
-              <p className="text-sm text-slate-900 font-mono font-bold mb-2 hover:underline cursor-pointer">admissions@agastya.edu.in</p>
-              <p className="text-sm text-slate-900 font-mono font-bold hover:underline cursor-pointer">info@agastya.edu.in</p>
+              <p className="text-sm text-slate-900 font-mono font-bold mb-2 hover:underline cursor-pointer">contact@agastyaacademy.online</p>
             </div>
             
             <div>

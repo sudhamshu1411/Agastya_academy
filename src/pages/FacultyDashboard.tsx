@@ -9,7 +9,7 @@ import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function FacultyDashboard() {
   const navigate = useNavigate();
-  const userFullName = localStorage.getItem("userFullName") || "R.P Kumar";
+  const userFullName = "R.P Kumar";
   const [activeTab, setActiveTab] = useState("overview");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 

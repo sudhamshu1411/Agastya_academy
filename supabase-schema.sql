@@ -1,118 +1,57 @@
--- agastya_meetings table schema for Supabase
+-- Reset existing table to avoid 42P07 relation already exists error
+DROP TABLE IF EXISTS public.profiles CASCADE;
 
-CREATE TABLE IF NOT EXISTS public.meetings (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    type TEXT NOT NULL,
-    time TEXT NOT NULL,
-    date TEXT NOT NULL,
-    durationMinutes INTEGER NOT NULL,
-    target TEXT NOT NULL,
-    link TEXT,
-    completed BOOLEAN DEFAULT false,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+-- 1. Create the `profiles` table to store extra user data
+create table public.profiles (
+  id uuid not null references auth.users on delete cascade,
+  email text,
+  full_name text,
+  role text default 'new user'::text,
+  created_at timestamp with time zone default timezone('utc'::text, now()),
+  primary key (id)
 );
 
--- Basic row level security (RLS) policies
-ALTER TABLE public.meetings ENABLE ROW LEVEL SECURITY;
+-- 2. Enable Row Level Security (RLS) on the `profiles` table
+alter table public.profiles enable row level security;
 
-DROP POLICY IF EXISTS "Enable read access for all users" ON public.meetings;
-DROP POLICY IF EXISTS "Enable insert for all users" ON public.meetings;
-DROP POLICY IF EXISTS "Enable update for all users" ON public.meetings;
-DROP POLICY IF EXISTS "Enable delete for all users" ON public.meetings;
+-- 3. Create RLS Policies
 
-CREATE POLICY "Enable read access for all users" ON public.meetings AS PERMISSIVE FOR SELECT TO public USING (true);
-CREATE POLICY "Enable insert for all users" ON public.meetings AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
-CREATE POLICY "Enable update for all users" ON public.meetings AS PERMISSIVE FOR UPDATE TO public USING (true);
-CREATE POLICY "Enable delete for all users" ON public.meetings AS PERMISSIVE FOR DELETE TO public USING (true);
+-- Allow anyone to read profiles (or you can restrict this to authenticated users)
+create policy "Profiles are viewable by everyone"
+  on public.profiles for select
+  using ( true );
 
-CREATE TABLE IF NOT EXISTS public.materials (
-    id SERIAL PRIMARY KEY,
-    title TEXT NOT NULL,
-    size TEXT NOT NULL,
-    batch TEXT NOT NULL,
-    date TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
+-- Allow users to update their own profile
+create policy "Users can update own profile"
+  on public.profiles for update
+  using ( auth.uid() = id );
 
-ALTER TABLE public.materials ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Enable read access for all users" ON public.materials;
-DROP POLICY IF EXISTS "Enable insert for all users" ON public.materials;
-DROP POLICY IF EXISTS "Enable delete for all users" ON public.materials;
+-- 4. Create a trigger function to automatically insert a new profile when a user signs up
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, email, full_name, role)
+  values (
+    new.id, 
+    new.email, 
+    new.raw_user_meta_data->>'full_name', 
+    coalesce(new.raw_user_meta_data->>'role', 'new user')
+  );
+  return new;
+end;
+$$ language plpgsql security definer;
 
-CREATE POLICY "Enable read access for all users" ON public.materials AS PERMISSIVE FOR SELECT TO public USING (true);
-CREATE POLICY "Enable insert for all users" ON public.materials AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
-CREATE POLICY "Enable delete for all users" ON public.materials AS PERMISSIVE FOR DELETE TO public USING (true);
+-- 5. Attach the trigger to the `auth.users` table
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
 
-CREATE TABLE IF NOT EXISTS public.assessments (
-    id SERIAL PRIMARY KEY,
-    type TEXT NOT NULL,
-    due TEXT NOT NULL,
-    title TEXT NOT NULL,
-    batch TEXT NOT NULL,
-    color TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
-ALTER TABLE public.assessments ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Enable read access for all users" ON public.assessments;
-DROP POLICY IF EXISTS "Enable insert for all users" ON public.assessments;
-DROP POLICY IF EXISTS "Enable delete for all users" ON public.assessments;
-
-CREATE POLICY "Enable read access for all users" ON public.assessments AS PERMISSIVE FOR SELECT TO public USING (true);
-CREATE POLICY "Enable insert for all users" ON public.assessments AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
-CREATE POLICY "Enable delete for all users" ON public.assessments AS PERMISSIVE FOR DELETE TO public USING (true);
-
-CREATE TABLE IF NOT EXISTS public.notices (
-    id BIGINT PRIMARY KEY,
-    msg TEXT NOT NULL,
-    time TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
-ALTER TABLE public.notices ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Enable read access for all users" ON public.notices;
-DROP POLICY IF EXISTS "Enable insert for all users" ON public.notices;
-
-CREATE POLICY "Enable read access for all users" ON public.notices AS PERMISSIVE FOR SELECT TO public USING (true);
-CREATE POLICY "Enable insert for all users" ON public.notices AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
-
-CREATE TABLE IF NOT EXISTS public.submissions (
-    id SERIAL PRIMARY KEY,
-    student TEXT NOT NULL,
-    batch TEXT NOT NULL,
-    title TEXT NOT NULL,
-    date TEXT NOT NULL,
-    status TEXT NOT NULL,
-    score INTEGER,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
-ALTER TABLE public.submissions ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Enable read access for all users" ON public.submissions;
-DROP POLICY IF EXISTS "Enable insert for all users" ON public.submissions;
-DROP POLICY IF EXISTS "Enable update for all users" ON public.submissions;
-
-CREATE POLICY "Enable read access for all users" ON public.submissions AS PERMISSIVE FOR SELECT TO public USING (true);
-CREATE POLICY "Enable insert for all users" ON public.submissions AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
-CREATE POLICY "Enable update for all users" ON public.submissions AS PERMISSIVE FOR UPDATE TO public USING (true);
-
-CREATE TABLE IF NOT EXISTS public.interventions (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    batch TEXT NOT NULL,
-    issue TEXT NOT NULL,
-    metric TEXT NOT NULL,
-    logged BOOLEAN DEFAULT false,
-    notes TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
-ALTER TABLE public.interventions ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Enable read access for all users" ON public.interventions;
-DROP POLICY IF EXISTS "Enable insert for all users" ON public.interventions;
-DROP POLICY IF EXISTS "Enable update for all users" ON public.interventions;
-
-CREATE POLICY "Enable read access for all users" ON public.interventions AS PERMISSIVE FOR SELECT TO public USING (true);
-CREATE POLICY "Enable insert for all users" ON public.interventions AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
-CREATE POLICY "Enable update for all users" ON public.interventions AS PERMISSIVE FOR UPDATE TO public USING (true);
+-- 6. (Optional) Provide a secure way for admin to delete users in frontend via RPC
+create or replace function public.delete_user(user_id uuid)
+returns void as $$
+begin
+  -- Only allow founders/admins to execute this in a real app
+  delete from auth.users where id = user_id;
+end;
+$$ language plpgsql security definer;

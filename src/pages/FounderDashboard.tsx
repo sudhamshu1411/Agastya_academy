@@ -6,12 +6,12 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { motion, AnimatePresence } from "motion/react";
 import { getAdmissions, updateAdmissionStatus, deleteAdmissionByEmail, updateAdmissionByEmail, deleteAdmissionById } from "../lib/admissions";
-import { getValidUsers, deleteUser, updateUserRole, updateUser } from "../lib/users";
+import { fetchProfiles, deleteUserRow, updateUserRoleAsync, updateUser } from "../lib/users";
 import { ShieldAlert, Trash2, Edit2, Menu, X, CheckCircle2 } from "lucide-react";
 import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function FounderDashboard() {
-  const userFullName = localStorage.getItem("userFullName") || "Director";
+  const userFullName = "Director";
   const [activeTab, setActiveTab] = useState("executive");
   const [systemLocked, setSystemLocked] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -29,13 +29,14 @@ export function FounderDashboard() {
 
   useEffect(() => {
     setAdmissionsLogs(getAdmissions());
-    setPortalUsers(getValidUsers());
+    fetchProfiles().then(setPortalUsers);
   }, [activeTab]);
 
-  const handleDeleteStudent = (email: string) => {
-    deleteUser(email);
+  const handleDeleteStudent = async (email: string) => {
+    const user = portalUsers.find(u => u.email === email);
+    if (user?.id) await deleteUserRow(user.id, email);
     deleteAdmissionByEmail(email);
-    setPortalUsers(getValidUsers());
+    fetchProfiles().then(setPortalUsers);
     setAdmissionsLogs(getAdmissions());
   };
 
@@ -49,7 +50,7 @@ export function FounderDashboard() {
     updateUser(email, { fullName: editStudentName });
     updateAdmissionByEmail(email, { studentName: editStudentName, cohort: editStudentCohort });
     setEditingStudent(null);
-    setPortalUsers(getValidUsers());
+    fetchProfiles().then(setPortalUsers);
     setAdmissionsLogs(getAdmissions());
   };
 
@@ -69,23 +70,25 @@ export function FounderDashboard() {
       facultyId: editFacultyData.id,
     });
     setEditingFaculty(null);
-    setPortalUsers(getValidUsers());
+    fetchProfiles().then(setPortalUsers);
   };
 
 
-  const handleDeleteUser = (email: string) => {
-    deleteUser(email);
+  const handleDeleteUser = async (email: string) => {
+    const user = portalUsers.find(u => u.email === email);
+    if (user?.id) await deleteUserRow(user.id, email);
     deleteAdmissionByEmail(email);
-    setPortalUsers(getValidUsers());
+    fetchProfiles().then(setPortalUsers);
     setAdmissionsLogs(getAdmissions());
   };
 
-  const handleUpdateUserRole = (email: string, role: string) => {
-    updateUserRole(email, role);
-    setPortalUsers(getValidUsers());
+  const handleUpdateUserRole = async (email: string, role: string) => {
+    const user = portalUsers.find(u => u.email === email);
+    if (user?.id) await updateUserRoleAsync(user.id, email, role);
+    fetchProfiles().then(setPortalUsers);
   };
 
-  const handleUpdateStatus = (id: string, prevStatus: string) => {
+  const handleUpdateStatus = async (id: string, prevStatus: string) => {
     const log = admissionsLogs.find(a => a.id === id);
     const nextStatus = prevStatus === 'Pending Review' ? 'Interview Scheduled' 
       : prevStatus === 'Interview Scheduled' ? 'Admitted'
@@ -94,22 +97,24 @@ export function FounderDashboard() {
     updateAdmissionStatus(id, nextStatus);
     
     if (log && log.email) {
+      const user = portalUsers.find(u => u.email === log.email);
       if (nextStatus === 'Admitted') {
-        updateUserRole(log.email, 'student');
+        if (user?.id) await updateUserRoleAsync(user.id, log.email, 'student');
       } else if (prevStatus === 'Admitted') {
-        updateUserRole(log.email, 'new user');
+        if (user?.id) await updateUserRoleAsync(user.id, log.email, 'new user');
       }
-      setPortalUsers(getValidUsers());
+      fetchProfiles().then(setPortalUsers);
     }
     
     setAdmissionsLogs(getAdmissions());
   };
 
-  const handleDeleteAdmission = (id: string, email: string) => {
+  const handleDeleteAdmission = async (id: string, email: string) => {
     deleteAdmissionById(id);
     if (email) {
-      deleteUser(email);
-      setPortalUsers(getValidUsers());
+      const user = portalUsers.find(u => u.email === email);
+      if (user?.id) await deleteUserRow(user.id, email);
+      fetchProfiles().then(setPortalUsers);
     }
     setAdmissionsLogs(getAdmissions());
   };
