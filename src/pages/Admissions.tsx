@@ -59,23 +59,26 @@ export function Admissions() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newId = `APP-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`;
     setAppId(newId);
     
-    saveAdmission({
-      id: newId,
-      email: formData.email,
-      studentName: `${formData.firstName} ${formData.lastName}`.trim(),
-      previousSchool: formData.school,
-      cohort: formData.batch === 'alpha' ? 'Alpha' : formData.batch === 'crash' ? "Crash '25" : "Target NEET",
-      parentContact: formData.mobile,
-      status: "Pending Review",
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    });
-    
-    setIsSubmitted(true);
+    try {
+      await saveAdmission({
+        id: newId,
+        email: formData.email,
+        studentName: `${formData.firstName} ${formData.lastName}`.trim(),
+        previousSchool: formData.school,
+        cohort: formData.batch === 'alpha' ? 'Alpha' : formData.batch === 'crash' ? "Crash '25" : "Target NEET",
+        parentContact: formData.mobile,
+        status: "Pending Review",
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      });
+      setIsSubmitted(true);
+    } catch(err: any) {
+      alert("Error submitting application: " + err.message + "\n\nIf you created the table in Supabase via SQL, please ensure it has the correct column names and RLS policies allow insertion.");
+    }
   };
 
   if (isSubmitted) {

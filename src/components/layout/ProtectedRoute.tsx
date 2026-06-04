@@ -4,12 +4,17 @@ import { supabase } from "../../supabaseClient";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<any>(null);
+  const [profileRole, setProfileRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
+      if (session?.user?.id) {
+        const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+        if (data) setProfileRole(data.role);
+      }
       setLoading(false);
     }).catch(err => {
       console.error("Supabase getSession error:", err);
@@ -18,8 +23,14 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
+      if (session?.user?.id) {
+        const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+        if (data) setProfileRole(data.role);
+      } else {
+        setProfileRole(null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -37,9 +48,19 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  // Restrict "new user" to /dashboard
-  const role = session.user?.user_metadata?.role;
-  if (role === "new user" && location.pathname !== "/dashboard") {
+  // Restrict based on profile role, fallback to metadata if profile not fetched yet
+  const isFounderEmail = session.user?.email?.toLowerCase().trim() === 'sudhamshu1411@gmail.com';
+  const role = isFounderEmail ? 'founder' : (profileRole || session.user?.user_metadata?.role);
+
+  if (role === "new user" && location.pathname !== "/dashboard" && location.pathname !== "/login") {
+    // Only founders can access founder dashboard
+    if (location.pathname.startsWith('/founder')) return <Navigate to="/dashboard" replace />;
+    if (location.pathname.startsWith('/admin')) return <Navigate to="/dashboard" replace />;
+    if (location.pathname.startsWith('/faculty')) return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  if (location.pathname.startsWith('/founder') && role !== 'founder') {
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -106,7 +106,7 @@ export function AdminDashboard() {
 
   useEffect(() => {
     fetchProfiles().then(setPortalUsers);
-    setAdmissionsLogs(getAdmissions());
+    getAdmissions().then(setAdmissionsLogs);
     setNotices(getNotices());
     setAlerts(getInterventions().filter((i:any) => !i.logged));
     setSelectedStudentEmails([]); // Clear selection when tab changes
@@ -121,9 +121,9 @@ export function AdminDashboard() {
   const handleDeleteUser = async (email: string) => {
     const user = portalUsers.find(u => u.email === email);
     if (user?.id) await deleteUserRow(user.id, email);
-    deleteAdmissionByEmail(email);
+    await deleteAdmissionByEmail(email);
     fetchProfiles().then(setPortalUsers);
-    setAdmissionsLogs(getAdmissions());
+    getAdmissions().then(setAdmissionsLogs);
   };
 
   const handleUpdateUserRole = async (email: string, role: string) => {
@@ -189,28 +189,46 @@ export function AdminDashboard() {
     }
   };
 
-  const allStudents = portalUsers
-    .filter(u => u.role === "student")
-    .map(u => {
-      const log = admissionsLogs.find(a => a.email === u.email) || {};
-      const name = u.fullName || log.studentName || "Unknown";
-      let performanceAvg = "85%";
-      if (name.includes("Vikram")) {
-        performanceAvg = "38%";
-      } else if (name.includes("Rahul")) {
-        performanceAvg = "88%";
-      } else if (name.includes("Sneha")) {
-        performanceAvg = "92%";
-      }
-      return {
-        email: u.email,
-        id: log.id || "N/A",
-        name,
-        batch: log.cohort || "N/A",
-        feeStatus: log.status === "Admitted" ? "Paid" : "Pending",
-        performance: performanceAvg
-      };
+  const allStudentsList: any[] = [];
+  const processedEmails = new Set<string>();
+
+  portalUsers.filter(u => u.role === "student").forEach(u => {
+    if (u.email) processedEmails.add(u.email);
+    const log = admissionsLogs.find(a => a.email === u.email) || {};
+    const name = u.fullName || log.studentName || "Unknown";
+    let performanceAvg = "85%";
+    if (name.includes("Vikram")) performanceAvg = "38%";
+    else if (name.includes("Rahul")) performanceAvg = "88%";
+    else if (name.includes("Sneha")) performanceAvg = "92%";
+    allStudentsList.push({
+      email: u.email,
+      id: log.id || "N/A",
+      name,
+      batch: log.cohort || "N/A",
+      feeStatus: log.status === "Admitted" ? "Paid" : "Pending",
+      performance: performanceAvg
     });
+  });
+
+  admissionsLogs.filter(a => a.status === "Admitted").forEach(a => {
+    if (a.email && processedEmails.has(a.email)) return;
+    if (a.email) processedEmails.add(a.email);
+    const name = a.studentName || "Unknown";
+    let performanceAvg = "85%";
+    if (name.includes("Vikram")) performanceAvg = "38%";
+    else if (name.includes("Rahul")) performanceAvg = "88%";
+    else if (name.includes("Sneha")) performanceAvg = "92%";
+    allStudentsList.push({
+      email: a.email || "N/A",
+      id: a.id || "N/A",
+      name,
+      batch: a.cohort || "N/A",
+      feeStatus: "Paid",
+      performance: performanceAvg
+    });
+  });
+
+  const allStudents = allStudentsList;
 
   const uniqueBatches = Array.from(new Set(allStudents.map(s => s.batch))).filter(b => b && b !== "N/A");
 
@@ -242,15 +260,15 @@ export function AdminDashboard() {
     setSelectedStudentEmails([]);
   };
 
-  const handleBulkChangeBatch = (e: React.FormEvent) => {
+  const handleBulkChangeBatch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedStudentEmails.length === 0 || !bulkBatchTarget) return;
     
-    selectedStudentEmails.forEach(email => {
-      updateAdmissionByEmail(email, { cohort: bulkBatchTarget });
-    });
+    await Promise.all(selectedStudentEmails.map((email: string) => 
+      updateAdmissionByEmail(email, { cohort: bulkBatchTarget })
+    ));
     
-    setAdmissionsLogs(getAdmissions());
+    getAdmissions().then(setAdmissionsLogs);
     setSelectedStudentEmails([]);
     setIsBulkBatchModalOpen(false);
     setBulkBatchTarget("");

@@ -9,19 +9,31 @@ import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function StudentDashboard() {
   const [sessionUser, setSessionUser] = useState<any>(null);
+  const [profileRole, setProfileRole] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
   
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       const user = session?.user;
       setSessionUser(user || null);
-      if (user?.user_metadata?.role === "new user") {
+      let r = user?.user_metadata?.role;
+      const isFounderEmail = user?.email?.toLowerCase().trim() === 'sudhamshu1411@gmail.com';
+      if (isFounderEmail) r = 'founder';
+      if (user?.id) {
+        const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        if (data?.role) {
+           setProfileRole(data.role);
+           if (!isFounderEmail) r = data.role;
+        }
+      }
+      if (r === "new user") {
         setActiveTab("demo_dashboard");
       }
     });
   }, []);
 
-  const userRole = sessionUser?.user_metadata?.role || "student";
+  const isFounderEmail = sessionUser?.email?.toLowerCase().trim() === 'sudhamshu1411@gmail.com';
+  const userRole = isFounderEmail ? 'founder' : (profileRole || sessionUser?.user_metadata?.role || "student");
   const userFullName = sessionUser?.user_metadata?.full_name || "Rahul Sharma";
   const userEmail = sessionUser?.email || "student@agastya.edu";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

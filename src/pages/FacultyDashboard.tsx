@@ -27,9 +27,9 @@ export function FacultyDashboard() {
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
 
-  const handleOpenAttendance = (batchName: string) => {
+  const handleOpenAttendance = async (batchName: string) => {
     const portalUsers = getValidUsers();
-    const admissionsLogs = getAdmissions();
+    const admissionsLogs = await getAdmissions();
     
     const studentsInBatch = portalUsers
       .filter((u: any) => u.role === "student")

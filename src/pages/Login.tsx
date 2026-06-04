@@ -11,7 +11,7 @@ export function Login() {
   const modeParam = searchParams.get("mode");
 
   const [mode, setMode] = useState<"login" | "signup">(modeParam === "signup" ? "signup" : "login");
-  const [formData, setFormData] = useState({ identifier: "", password: "", fullName: "" });
+  const [formData, setFormData] = useState({ identifier: "", password: "", fullName: "", phone: "" });
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,24 +24,30 @@ export function Login() {
     setIsLoading(true);
 
     try {
+      const trimmedEmail = formData.identifier.trim();
+      
       if (mode === "signup") {
-        const isFounder = formData.identifier.toLowerCase().trim() === 'sudhamshu1411@gmail.com';
+        const isFounder = trimmedEmail.toLowerCase() === 'sudhamshu1411@gmail.com';
         const { data, error: signUpError } = await supabase.auth.signUp({
-          email: formData.identifier,
+          email: trimmedEmail,
           password: formData.password,
           options: {
             data: {
               full_name: isFounder ? "Sudhamshu (Founder)" : formData.fullName,
-              role: isFounder ? "founder" : "new user"
+              role: isFounder ? "founder" : "new user",
+              phone: formData.phone
             }
           }
         });
 
         if (signUpError) {
+          console.error("SignUp Error:", signUpError);
           if (signUpError.message.includes('rate limit')) {
             setError("We've restricted further sign-ups due to too many rapid attempts. Please try again or use the test credentials.");
+          } else if (signUpError.message.toLowerCase().includes('already registered')) {
+            setError("This email is already registered. Please switch to 'Sign In' to log into your account.");
           } else {
-            setError("We encountered an error during sign-up. Please ensure your email is correct and try again.");
+            setError("Sign-up Error: " + (signUpError.message || "Please ensure your email is correct and try again."));
           }
         } else {
           // Manually insert into profiles just in case there is no trigger
@@ -51,7 +57,8 @@ export function Login() {
                 id: data.user.id,
                 email: formData.identifier,
                 full_name: isFounder ? "Sudhamshu (Founder)" : formData.fullName,
-                role: isFounder ? "founder" : "new user"
+                role: isFounder ? "founder" : "new user",
+                phone: formData.phone
               }
             ]);
           }
@@ -67,16 +74,23 @@ export function Login() {
         }
       } else {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({
-          email: formData.identifier,
+          email: trimmedEmail,
           password: formData.password,
         });
 
         if (signInError) {
           setError("Invalid email or password. Please try again.");
         } else {
-          // Success! Redirect based on role
-          const role = data.user?.user_metadata?.role;
-          const isFounderEmail = formData.identifier.toLowerCase().trim() === 'sudhamshu1411@gmail.com';
+          // Success! Redirect based on role from profiles
+          let role = data.user?.user_metadata?.role;
+          if (data.user?.id) {
+            const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+            if (profile?.role) {
+              role = profile.role;
+            }
+          }
+          
+          const isFounderEmail = trimmedEmail.toLowerCase() === 'sudhamshu1411@gmail.com';
           let targetPath = "/dashboard";
           if (role === 'founder' || isFounderEmail) targetPath = "/founder/dashboard";
           else if (role === 'faculty') targetPath = "/faculty/dashboard";
@@ -142,19 +156,34 @@ export function Login() {
 
           <form onSubmit={handleLogin} className="space-y-6">
             {mode === "signup" && (
-              <div>
-                <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-900 mb-2">
-                  Full Name
-                </label>
-                <input 
-                  type="text"
-                  required
-                  className="w-full border-b border-slate-900 bg-transparent py-3 text-sm focus:outline-none focus:border-slate-500 transition-colors placeholder:text-slate-300 font-mono"
-                  placeholder="John Doe"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                />
-              </div>
+              <>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-900 mb-2">
+                    Full Name
+                  </label>
+                  <input 
+                    type="text"
+                    required
+                    className="w-full border-b border-slate-900 bg-transparent py-3 text-sm focus:outline-none focus:border-slate-500 transition-colors placeholder:text-slate-300 font-mono"
+                    placeholder="John Doe"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-900 mb-2">
+                    Phone Number
+                  </label>
+                  <input 
+                    type="tel"
+                    required
+                    className="w-full border-b border-slate-900 bg-transparent py-3 text-sm focus:outline-none focus:border-slate-500 transition-colors placeholder:text-slate-300 font-mono"
+                    placeholder="+91 98765 43210"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  />
+                </div>
+              </>
             )}
             
             <div>

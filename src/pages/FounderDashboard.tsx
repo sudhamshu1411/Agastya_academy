@@ -26,18 +26,20 @@ export function FounderDashboard() {
   const [editingFaculty, setEditingFaculty] = useState<string | null>(null);
   const [editFacultyData, setEditFacultyData] = useState<any>({});
 
+  const [studentSearch, setStudentSearch] = useState("");
+  const [studentBatchFilter, setStudentBatchFilter] = useState("All");
 
   useEffect(() => {
-    setAdmissionsLogs(getAdmissions());
+    getAdmissions().then(setAdmissionsLogs);
     fetchProfiles().then(setPortalUsers);
   }, [activeTab]);
 
   const handleDeleteStudent = async (email: string) => {
     const user = portalUsers.find(u => u.email === email);
     if (user?.id) await deleteUserRow(user.id, email);
-    deleteAdmissionByEmail(email);
+    await deleteAdmissionByEmail(email);
     fetchProfiles().then(setPortalUsers);
-    setAdmissionsLogs(getAdmissions());
+    getAdmissions().then(setAdmissionsLogs);
   };
 
   const startEditStudent = (student: any) => {
@@ -46,12 +48,12 @@ export function FounderDashboard() {
     setEditStudentCohort(student.batch);
   };
 
-  const handleSaveStudent = (email: string) => {
-    updateUser(email, { fullName: editStudentName });
-    updateAdmissionByEmail(email, { studentName: editStudentName, cohort: editStudentCohort });
+  const handleSaveStudent = async (email: string) => {
+    await updateUser(email, { fullName: editStudentName });
+    await updateAdmissionByEmail(email, { studentName: editStudentName, cohort: editStudentCohort });
     setEditingStudent(null);
     fetchProfiles().then(setPortalUsers);
-    setAdmissionsLogs(getAdmissions());
+    getAdmissions().then(setAdmissionsLogs);
   };
 
   const startEditFaculty = (faculty: any) => {
@@ -77,15 +79,19 @@ export function FounderDashboard() {
   const handleDeleteUser = async (email: string) => {
     const user = portalUsers.find(u => u.email === email);
     if (user?.id) await deleteUserRow(user.id, email);
-    deleteAdmissionByEmail(email);
+    await deleteAdmissionByEmail(email);
     fetchProfiles().then(setPortalUsers);
-    setAdmissionsLogs(getAdmissions());
+    getAdmissions().then(setAdmissionsLogs);
   };
 
   const handleUpdateUserRole = async (email: string, role: string) => {
-    const user = portalUsers.find(u => u.email === email);
-    if (user?.id) await updateUserRoleAsync(user.id, email, role);
-    fetchProfiles().then(setPortalUsers);
+    try {
+      const user = portalUsers.find(u => u.email === email);
+      if (user?.id) await updateUserRoleAsync(user.id, email, role);
+      fetchProfiles().then(setPortalUsers);
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   const handleUpdateStatus = async (id: string, prevStatus: string) => {
@@ -94,7 +100,7 @@ export function FounderDashboard() {
       : prevStatus === 'Interview Scheduled' ? 'Admitted'
       : prevStatus === 'Admitted' ? 'Rejected' 
       : 'Pending Review';
-    updateAdmissionStatus(id, nextStatus);
+    await updateAdmissionStatus(id, nextStatus);
     
     if (log && log.email) {
       const user = portalUsers.find(u => u.email === log.email);
@@ -106,17 +112,17 @@ export function FounderDashboard() {
       fetchProfiles().then(setPortalUsers);
     }
     
-    setAdmissionsLogs(getAdmissions());
+    getAdmissions().then(setAdmissionsLogs);
   };
 
   const handleDeleteAdmission = async (id: string, email: string) => {
-    deleteAdmissionById(id);
+    await deleteAdmissionById(id);
     if (email) {
       const user = portalUsers.find(u => u.email === email);
       if (user?.id) await deleteUserRow(user.id, email);
       fetchProfiles().then(setPortalUsers);
     }
-    setAdmissionsLogs(getAdmissions());
+    getAdmissions().then(setAdmissionsLogs);
   };
 
   const revenueData = [
@@ -128,19 +134,46 @@ export function FounderDashboard() {
     { month: "Jun", revenue: 750000 },
   ];
 
-  const allStudents = portalUsers
-    .filter(u => u.role === "student")
-    .map(u => {
-      const log = admissionsLogs.find(a => a.email === u.email) || {};
-      return {
-        email: u.email,
-        id: log.id || "N/A",
-        name: u.fullName || log.studentName || "Unknown",
-        batch: log.cohort || "N/A",
-        feeStatus: log.status === "Admitted" ? "Paid" : "Pending",
-        performance: "N/A"
-      };
+  const allStudentsList: any[] = [];
+  const processedEmails = new Set<string>();
+
+  portalUsers.filter(u => u.role === "student").forEach(u => {
+    if (u.email) processedEmails.add(u.email);
+    const log = admissionsLogs.find(a => a.email === u.email) || {};
+    const name = u.fullName || log.studentName || "Unknown";
+    allStudentsList.push({
+      email: u.email,
+      id: log.id || "N/A",
+      name,
+      batch: log.cohort || "N/A",
+      feeStatus: log.status === "Admitted" ? "Paid" : "Pending",
+      performance: "N/A"
     });
+  });
+
+  admissionsLogs.filter(a => a.status === "Admitted").forEach(a => {
+    if (a.email && processedEmails.has(a.email)) return;
+    if (a.email) processedEmails.add(a.email);
+    const name = a.studentName || "Unknown";
+    allStudentsList.push({
+      email: a.email || "N/A",
+      id: a.id || "N/A",
+      name,
+      batch: a.cohort || "N/A",
+      feeStatus: "Paid",
+      performance: "N/A"
+    });
+  });
+
+  const allStudents = allStudentsList;
+
+  const uniqueBatches = Array.from(new Set(allStudents.map(s => s.batch))).filter(b => b && b !== "N/A");
+
+  const filteredStudents = allStudents.filter(s => {
+    const matchesSearch = s.name.toLowerCase().includes(studentSearch.toLowerCase()) || s.id.toLowerCase().includes(studentSearch.toLowerCase());
+    const matchesBatch = studentBatchFilter === "All" || s.batch === studentBatchFilter;
+    return matchesSearch && matchesBatch;
+  });
 
   const dynamicFaculty = portalUsers.filter((u: any) => u.role === "faculty").map((f: any, idx) => ({
     email: f.email,
@@ -417,10 +450,27 @@ export function FounderDashboard() {
               <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
                 <Database className="w-4 h-4"/> Master Student Register
               </h3>
-              <div className="flex gap-2">
-                <button className="bg-slate-100 text-slate-900 px-4 py-2 text-[10px] uppercase tracking-widest font-bold border border-slate-300 hover:bg-slate-200 transition-colors">
-                  Filter Active
-                </button>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input 
+                    type="text" 
+                    placeholder="Search by name or ID..."
+                    value={studentSearch}
+                    onChange={(e) => setStudentSearch(e.target.value)}
+                    className="w-full sm:w-64 pl-9 pr-4 py-2 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors"
+                  />
+                </div>
+                <select 
+                  value={studentBatchFilter}
+                  onChange={(e) => setStudentBatchFilter(e.target.value)}
+                  className="w-full sm:w-40 px-4 py-2 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors bg-white font-mono text-[10px] uppercase tracking-widest font-bold"
+                >
+                  <option value="All">ALL BATCHES</option>
+                  {uniqueBatches.map((b: any) => (
+                    <option key={b} value={b}>{String(b).toUpperCase()}</option>
+                  ))}
+                </select>
                 <button className="bg-slate-900 text-white px-4 py-2 text-[10px] uppercase tracking-widest font-bold hover:bg-slate-800 transition-colors">
                   Export Log
                 </button>
@@ -439,7 +489,7 @@ export function FounderDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {allStudents.map((student, idx) => {
+                {filteredStudents.length > 0 ? filteredStudents.map((student, idx) => {
                   const isEditing = editingStudent === student.email;
                   return (
                   <motion.tr variants={itemVariants} key={idx} className="border-b border-slate-200 hover:bg-slate-50 transition-colors group">
@@ -516,7 +566,13 @@ export function FounderDashboard() {
                       )}
                     </td>
                   </motion.tr>
-                )})}
+                )}) : (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-slate-500 text-sm italic">
+                      No students match your search criteria.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </motion.table>
           </motion.div>

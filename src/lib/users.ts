@@ -13,6 +13,7 @@ export async function fetchProfiles() {
         fullName: d.full_name,
         role: d.role,
         id: d.id,
+        phone: d.phone || "",
       }));
     }
   }
@@ -39,12 +40,30 @@ export function deleteUser(email: string) {
 
 export async function updateUserRoleAsync(id: string, email: string, role: string) {
   if (import.meta.env.VITE_SUPABASE_URL && id) {
-    await supabase.from('profiles').update({ role }).eq('id', id);
+    const { error } = await supabase.rpc('update_user_role', { target_user_id: id, new_role: role });
+    if (error) {
+       console.error("Error updating user role (RPC):", error);
+       // Fallback for local / mock
+       const { error: fallbackError, data: updated } = await supabase.from('profiles').update({ role }).eq('id', id).select();
+       if (fallbackError || !updated || updated.length === 0) {
+         throw new Error("Failed to update role. Ensure you've run the LATEST update-role-schema.sql in Supabase SQL editor. Error: " + (error.message));
+       }
+    }
   }
 }
 
 export function updateUserRole(email: string, role: string) {
 }
 
-export function updateUser(email: string, updates: any) {
+export async function updateUser(email: string, updates: any) {
+  if (import.meta.env.VITE_SUPABASE_URL) {
+    const payload: any = {};
+    if (updates.fullName) payload.full_name = updates.fullName;
+    if (updates.phone) payload.phone = updates.phone;
+    
+    // Check if empty payload
+    if (Object.keys(payload).length === 0) return;
+
+    await supabase.from('profiles').update(payload).eq('email', email);
+  }
 }
