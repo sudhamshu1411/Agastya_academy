@@ -41,7 +41,7 @@ export function Login() {
           if (signUpError.message.includes('rate limit')) {
             setError("We've restricted further sign-ups due to too many rapid attempts. Please try again or use the test credentials.");
           } else {
-            setError(signUpError.message);
+            setError("We encountered an error during sign-up. Please ensure your email is correct and try again.");
           }
         } else {
           // Manually insert into profiles just in case there is no trigger
@@ -72,7 +72,7 @@ export function Login() {
         });
 
         if (signInError) {
-          setError(signInError.message);
+          setError("Invalid email or password. Please try again.");
         } else {
           // Success! Redirect based on role
           const role = data.user?.user_metadata?.role;
@@ -88,8 +88,8 @@ export function Login() {
       }
     } catch (err: any) {
       console.error("Login Error details:", err);
-      const sbUrl = import.meta.env.VITE_SUPABASE_URL || 'empty';
-      setError(`Auth failed. URL: ${sbUrl.substring(0, 10)}... Msg: ${err.message || 'Unknown error'}`);
+      // Removed sbUrl from being exposed in the UI
+      setError("An unexpected authentication error occurred. Please try again later.");
     } finally {
       setIsLoading(false);
     }
