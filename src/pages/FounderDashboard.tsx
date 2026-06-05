@@ -344,7 +344,7 @@ export function FounderDashboard() {
           <div className="flex gap-4 items-center">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input type="text" placeholder="Global search..." className="pl-10 pr-4 py-2 border border-slate-900 bg-white text-sm font-mono focus:outline-none placeholder:text-slate-400 w-64 shadow-[4px_4px_0px_#1A1A1A]" />
+              <input type="text" placeholder="Global search..." className="pl-10 pr-4 py-2 border border-slate-900 bg-white text-sm font-mono focus:outline-none placeholder:text-slate-400 w-64 shadow-[4px_4px_0px_var(--color-slate-900)]" />
             </div>
           </div>
         </header>
@@ -373,7 +373,7 @@ export function FounderDashboard() {
                 {/* Financial Chart */}
                 <motion.div 
                   variants={itemVariants}
-                  className="lg:col-span-2 bg-white border border-slate-900 p-8 shadow-[8px_8px_0px_#1A1A1A]"
+                  className="lg:col-span-2 bg-white border border-slate-900 p-8 shadow-[8px_8px_0px_var(--color-slate-900)]"
                 >
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em]">H1 Revenue Trajectory</h3>
@@ -444,7 +444,7 @@ export function FounderDashboard() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-2 sm:p-8 overflow-x-auto"
+            className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-2 sm:p-8 overflow-x-auto"
           >
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
               <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
@@ -586,7 +586,7 @@ export function FounderDashboard() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-2 sm:p-8 overflow-x-auto"
+            className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-2 sm:p-8 overflow-x-auto"
           >
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
               <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
@@ -685,7 +685,7 @@ export function FounderDashboard() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-2 sm:p-8 overflow-x-auto"
+            className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-2 sm:p-8 overflow-x-auto"
           >
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
               <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
@@ -779,7 +779,7 @@ export function FounderDashboard() {
             transition={{ duration: 0.4 }}
             className="space-y-8"
           >
-            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
+            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-8">
               <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] mb-6 flex items-center gap-2">
                 <Database className="w-4 h-4" /> Database Operations Hub
               </h3>
@@ -849,7 +849,7 @@ export function FounderDashboard() {
             transition={{ duration: 0.4 }}
             className="space-y-8"
           >
-            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
+            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-8">
               <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] mb-6 flex items-center gap-2">
                 <Settings className="w-4 h-4" /> Global Platform Settings
               </h3>
@@ -931,7 +931,7 @@ export function FounderDashboard() {
             animate={{ opacity: 1, y: 0 }} 
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.4 }}
-            className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-2 sm:p-8 overflow-x-auto"
+            className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-2 sm:p-8 overflow-x-auto"
           >
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4 border-b border-slate-200 pb-6">
               <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
@@ -992,7 +992,7 @@ export function FounderDashboard() {
             exit="exit"
             className="space-y-8"
           >
-            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
+            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
                   <FileText className="w-4 h-4" /> Global Content & Assessments Registry
@@ -1076,7 +1076,7 @@ export function FounderDashboard() {
             exit="exit"
             className="space-y-8"
           >
-            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
+            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-8">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
                   <Video className="w-4 h-4" /> Live Institutional Streams
@@ -1089,7 +1089,7 @@ export function FounderDashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <motion.div variants={itemVariants} className="bg-slate-900 text-white p-6 shadow-[4px_4px_0px_#1A1A1A]">
+                <motion.div variants={itemVariants} className="bg-slate-900 text-white p-6 shadow-[4px_4px_0px_var(--color-slate-900)]">
                    <div className="flex justify-between items-start mb-4">
                      <div>
                        <span className="inline-flex items-center gap-2 px-2 py-1 bg-white/10 text-white border border-white/20 text-[9px] font-bold uppercase tracking-widest mb-3">
@@ -1106,7 +1106,7 @@ export function FounderDashboard() {
                    </div>
                 </motion.div>
 
-                <motion.div variants={itemVariants} className="bg-slate-900 text-white p-6 shadow-[4px_4px_0px_#1A1A1A]">
+                <motion.div variants={itemVariants} className="bg-slate-900 text-white p-6 shadow-[4px_4px_0px_var(--color-slate-900)]">
                    <div className="flex justify-between items-start mb-4">
                      <div>
                        <span className="inline-flex items-center gap-2 px-2 py-1 bg-white/10 text-white border border-white/20 text-[9px] font-bold uppercase tracking-widest mb-3">
@@ -1152,7 +1152,7 @@ export function FounderDashboard() {
             exit="exit"
             className="space-y-8"
           >
-            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-2 sm:p-8 overflow-x-auto">
+            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-2 sm:p-8 overflow-x-auto">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
                   <ShieldAlert className="w-4 h-4 text-slate-900" /> Portal Active Users
@@ -1255,7 +1255,7 @@ function NavItem({ icon, label, active = false, onClick }: { icon: React.ReactNo
 
 function KpiCard({ title, value, subtext, isSecure = false }: { title: string, value: string | number, subtext: string, isSecure?: boolean }) {
   return (
-    <div className={`border p-6 shadow-[6px_6px_0px_#1A1A1A] ${isSecure ? 'bg-[#D4AF37]/10 border-[#D4AF37] text-slate-900' : 'bg-white border-slate-900 text-slate-900'}`}>
+    <div className={`border p-6 shadow-[6px_6px_0px_var(--color-slate-900)] ${isSecure ? 'bg-[#D4AF37]/10 border-[#D4AF37] text-slate-900' : 'bg-white border-slate-900 text-slate-900'}`}>
       <h3 className={`text-[10px] uppercase tracking-[0.2em] font-bold mb-4 ${isSecure ? 'text-[#D4AF37]' : 'text-slate-500'}`}>{title}</h3>
       <div className="text-4xl font-serif italic mb-2 text-slate-900">{value}</div>
       <p className="text-[10px] font-mono tracking-widest text-slate-500">{subtext}</p>

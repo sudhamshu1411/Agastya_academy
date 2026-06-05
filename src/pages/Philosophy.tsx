@@ -64,11 +64,11 @@ export function Philosophy() {
                 Telling a student to "study at home" is insufficient. Procrastination is a systemic failure, not a moral one. It happens when tasks are ambiguous and unmonitored.
               </p>
               <div className="grid grid-cols-2 gap-6 mt-8">
-                 <div className="border border-slate-900 p-6 shadow-[4px_4px_0px_#1A1A1A]">
+                 <div className="border border-slate-900 p-6 shadow-[4px_4px_0px_var(--color-slate-900)]">
                     <h4 className="text-[10px] uppercase tracking-widest font-bold text-slate-900 mb-2">Daily ERP Tasks</h4>
                     <p className="text-sm font-mono text-slate-600">Students receive exact MCQ counts, video modules, and syllabus chunks daily via the portal.</p>
                  </div>
-                 <div className="border border-slate-900 p-6 shadow-[4px_4px_0px_#1A1A1A]">
+                 <div className="border border-slate-900 p-6 shadow-[4px_4px_0px_var(--color-slate-900)]">
                     <h4 className="text-[10px] uppercase tracking-widest font-bold text-slate-900 mb-2">Completion Tracking</h4>
                     <p className="text-sm font-mono text-slate-600">Faculty monitor daily compliance rates. Inconsistency triggers immediate interventions.</p>
                  </div>

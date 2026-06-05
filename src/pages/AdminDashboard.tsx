@@ -339,9 +339,9 @@ export function AdminDashboard() {
           <div className="flex gap-4 items-center">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input type="text" placeholder="Lookup student..." className="pl-10 pr-4 py-2 border border-slate-900 bg-white text-sm font-mono focus:outline-none placeholder:text-slate-400 w-64 shadow-[4px_4px_0px_#1A1A1A]" />
+              <input type="text" placeholder="Lookup student..." className="pl-10 pr-4 py-2 border border-slate-900 bg-white text-sm font-mono focus:outline-none placeholder:text-slate-400 w-64 shadow-[4px_4px_0px_var(--color-slate-900)]" />
             </div>
-            <button className="w-10 h-10 border border-slate-900 bg-white flex items-center justify-center shadow-[4px_4px_0px_#1A1A1A] hover:translate-y-[2px] transition-transform relative">
+            <button className="w-10 h-10 border border-slate-900 bg-white flex items-center justify-center shadow-[4px_4px_0px_var(--color-slate-900)] hover:translate-y-[2px] transition-transform relative">
               <Bell className="w-4 h-4 text-slate-900" />
               <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-slate-900"></span>
             </button>
@@ -362,7 +362,7 @@ export function AdminDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
               {/* Action Required Banner */}
               <div className="lg:col-span-2 space-y-8">
-                <div className="bg-white border border-slate-900 p-8 shadow-[8px_8px_0px_#1A1A1A]">
+                <div className="bg-white border border-slate-900 p-8 shadow-[8px_8px_0px_var(--color-slate-900)]">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 text-slate-900" /> Requires Intervention
@@ -392,7 +392,7 @@ export function AdminDashboard() {
                 </div>
 
                 {/* Performance Chart */}
-                <div className="bg-white border border-slate-900 p-8 shadow-[8px_8px_0px_#1A1A1A]">
+                <div className="bg-white border border-slate-900 p-8 shadow-[8px_8px_0px_var(--color-slate-900)]">
                   <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] mb-6">Cohort Analytics Matrix</h3>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
@@ -414,7 +414,7 @@ export function AdminDashboard() {
 
               {/* Quick Actions & Recent Activity */}
               <div className="space-y-8">
-                <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_#1A1A1A]">
+                <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_var(--color-slate-900)]">
                   <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] mb-6">Execution Panel</h3>
                   <div className="space-y-3">
                     <button onClick={handleBroadcast} className="w-full bg-slate-900 text-white font-bold text-[10px] uppercase tracking-widest py-3 flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors">
@@ -447,7 +447,7 @@ export function AdminDashboard() {
         )}
 
         {activeTab === 'users' && (
-          <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-2 sm:p-8 overflow-x-auto">
+          <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-2 sm:p-8 overflow-x-auto">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
               <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 text-slate-900" /> Portal Active Users
@@ -519,7 +519,7 @@ export function AdminDashboard() {
         )}
 
         {activeTab === 'students' && (
-          <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-2 sm:p-8 overflow-x-auto">
+          <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-2 sm:p-8 overflow-x-auto">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
               <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
                 <Database className="w-4 h-4"/> Global Student List
@@ -550,7 +550,7 @@ export function AdminDashboard() {
 
             {/* Bulk Action Panel */}
             {selectedStudentEmails.length > 0 && (
-              <div className="bg-slate-900 text-white p-4 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-slate-900 shadow-[4px_4px_0px_#475569] animate-fadeIn">
+              <div className="bg-slate-900 text-white p-4 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-slate-900 shadow-[4px_4px_0px_var(--color-slate-600)] animate-fadeIn">
                 <div className="flex items-center gap-3">
                   <div className="bg-amber-400 p-1.5 text-slate-900 font-mono text-xs font-bold">
                     {selectedStudentEmails.length}
@@ -657,7 +657,7 @@ export function AdminDashboard() {
 
         {activeTab === 'academics' && (
           <div className="space-y-8">
-            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
+            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
                   <FileText className="w-4 h-4" /> Global Content & Assessments Registry
@@ -740,7 +740,7 @@ export function AdminDashboard() {
               </h3>
               <button 
                 onClick={() => openTaskModal(null)}
-                className="bg-slate-900 text-white px-4 py-2 text-[10px] uppercase tracking-widest font-bold hover:bg-slate-800 transition-colors shadow-[4px_4px_0px_#1A1A1A] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#1A1A1A]"
+                className="bg-slate-900 text-white px-4 py-2 text-[10px] uppercase tracking-widest font-bold hover:bg-slate-800 transition-colors shadow-[4px_4px_0px_var(--color-slate-900)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_var(--color-slate-900)]"
               >
                 + Create Task
               </button>
@@ -748,7 +748,7 @@ export function AdminDashboard() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {curriculumTasks.map(task => (
-                <div key={task.id} className="bg-white border border-slate-300 p-6 shadow-[4px_4px_0px_#1A1A1A] flex flex-col h-full">
+                <div key={task.id} className="bg-white border border-slate-300 p-6 shadow-[4px_4px_0px_var(--color-slate-900)] flex flex-col h-full">
                   <div className="flex-1">
                     <span className={`inline-block px-2 py-1 text-[9px] uppercase tracking-widest font-bold mb-3 ${task.status === 'completed' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}`}>
                       {task.status}
@@ -801,7 +801,7 @@ export function AdminDashboard() {
         {/* Global Live Operations Control */}
         {activeTab === 'live' && (
           <div className="space-y-8">
-            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
+            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-8">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
                   <Video className="w-4 h-4" /> Live Institutional Streams
@@ -814,7 +814,7 @@ export function AdminDashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-slate-900 text-white p-6 shadow-[4px_4px_0px_#1A1A1A]">
+                <div className="bg-slate-900 text-white p-6 shadow-[4px_4px_0px_var(--color-slate-900)]">
                    <div className="flex justify-between items-start mb-4">
                      <div>
                        <span className="inline-flex items-center gap-2 px-2 py-1 bg-white/10 text-white border border-white/20 text-[9px] font-bold uppercase tracking-widest mb-3">
@@ -831,7 +831,7 @@ export function AdminDashboard() {
                    </div>
                 </div>
 
-                <div className="bg-slate-900 text-white p-6 shadow-[4px_4px_0px_#1A1A1A]">
+                <div className="bg-slate-900 text-white p-6 shadow-[4px_4px_0px_var(--color-slate-900)]">
                    <div className="flex justify-between items-start mb-4">
                      <div>
                        <span className="inline-flex items-center gap-2 px-2 py-1 bg-white/10 text-white border border-white/20 text-[9px] font-bold uppercase tracking-widest mb-3">
@@ -881,7 +881,7 @@ export function AdminDashboard() {
       {/* Curriculum Task Modal */}
       {isTaskModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_#1A1A1A] max-w-md w-full p-8 relative">
+          <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] max-w-md w-full p-8 relative">
             <button 
               onClick={() => setIsTaskModalOpen(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors"
@@ -961,7 +961,7 @@ export function AdminDashboard() {
                 </button>
                 <button 
                   type="submit" 
-                  className="bg-slate-900 text-white px-6 py-2 text-[10px] uppercase tracking-widest font-bold hover:bg-slate-800 transition-colors shadow-[2px_2px_0px_#1A1A1A] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#1A1A1A]"
+                  className="bg-slate-900 text-white px-6 py-2 text-[10px] uppercase tracking-widest font-bold hover:bg-slate-800 transition-colors shadow-[2px_2px_0px_var(--color-slate-900)] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_var(--color-slate-900)]"
                 >
                   Save Task
                 </button>
@@ -974,7 +974,7 @@ export function AdminDashboard() {
       {/* Student Academic Performance Profile Modal */}
       {selectedStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_#1A1A1A] max-w-lg w-full p-8 relative max-h-[85vh] overflow-y-auto">
+          <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] max-w-lg w-full p-8 relative max-h-[85vh] overflow-y-auto">
             <button 
               onClick={() => setSelectedStudent(null)}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors"
@@ -1062,7 +1062,7 @@ export function AdminDashboard() {
       {/* Send Bulk Email Modal */}
       {isBulkEmailModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_#1A1A1A] max-w-lg w-full p-8 relative max-h-[85vh] overflow-y-auto">
+          <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] max-w-lg w-full p-8 relative max-h-[85vh] overflow-y-auto">
             <button 
               onClick={() => setIsBulkEmailModalOpen(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors"
@@ -1125,7 +1125,7 @@ export function AdminDashboard() {
       {/* Change Batch Modal */}
       {isBulkBatchModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm font-sans">
-          <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_#1A1A1A] max-w-md w-full p-8 relative">
+          <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] max-w-md w-full p-8 relative">
             <button 
               onClick={() => setIsBulkBatchModalOpen(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors"
@@ -1193,7 +1193,7 @@ function NavItem({ icon, label, active = false, onClick }: { icon: React.ReactNo
 
 function KpiCard({ title, value, subtext, alert = false }: { title: string, value: string | number, subtext: string, alert?: boolean }) {
   return (
-    <div className={`border p-6 shadow-[6px_6px_0px_#1A1A1A] ${alert ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-900 text-slate-900'}`}>
+    <div className={`border p-6 shadow-[6px_6px_0px_var(--color-slate-900)] ${alert ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-900 text-slate-900'}`}>
       <h3 className={`text-[10px] uppercase tracking-[0.2em] font-bold mb-4 ${alert ? 'text-white/60' : 'text-slate-500'}`}>{title}</h3>
       <div className={`text-4xl font-serif italic mb-2 ${alert ? 'text-white' : 'text-slate-900'}`}>{value}</div>
       <p className={`text-[10px] font-mono tracking-widest ${alert ? 'text-amber-400' : 'text-slate-500'}`}>{subtext}</p>

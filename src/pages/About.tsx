@@ -30,7 +30,7 @@ export function About() {
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="bg-white border border-slate-900 p-8 shadow-[12px_12px_0px_#1A1A1A]"
+            className="bg-white border border-slate-900 p-8 shadow-[12px_12px_0px_var(--color-slate-900)]"
           >
             <Shield className="w-8 h-8 mb-6 text-slate-900" />
             <h2 className="text-2xl font-serif italic mb-4">Our Integrity</h2>
@@ -53,7 +53,7 @@ export function About() {
               <h3 className="font-bold text-sm mb-2">The Goal</h3>
               <p className="text-xs text-slate-400">To cultivate clarity of thought and depth of subject knowledge over rote memorization.</p>
             </div>
-            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_#1A1A1A]">
+            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_var(--color-slate-900)]">
               <BookOpen className="w-6 h-6 mb-4 text-slate-900" />
               <h3 className="font-bold text-sm mb-2">The Curriculum</h3>
               <p className="text-xs text-slate-600">A structured progression blending rigorous theory with exhaustive problem-solving.</p>

@@ -9,6 +9,7 @@ if (!rawUrl || !rawKey) {
 
 // Clean and validate URL
 let safeUrl = rawUrl.replace(/^["']|["']$/g, '').trim();
+let isPlaceholder = false;
 if (safeUrl) {
   // If user pasted url with extra spaces or newlines inside, clean it up
   safeUrl = safeUrl.replace(/\s+/g, '');
@@ -27,12 +28,25 @@ if (safeUrl) {
   }
 } else {
   safeUrl = 'https://placeholder.supabase.co';
+  isPlaceholder = true;
 }
 
 export const _testUrl = safeUrl;
 export const supabase = createClient(
   safeUrl,
-  rawKey.replace(/^["']|["']$/g, '').trim() || 'placeholder'
+  rawKey.replace(/^["']|["']$/g, '').trim() || 'placeholder',
+  {
+    global: {
+      fetch: async (url, options) => {
+        if (isPlaceholder) {
+          const urlStr = typeof url === 'string' ? url : (url && (url as Request).url ? (url as Request).url : '');
+          const isAuth = urlStr.includes('/auth/v1');
+          return new Response(JSON.stringify(isAuth ? {} : []), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+        return fetch(url, options);
+      }
+    }
+  }
 );
 
 

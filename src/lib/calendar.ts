@@ -1,8 +1,9 @@
-import { getAccessToken } from './auth';
+import { supabase } from './supabase';
 
 export const createMeetingEvent = async (title: string, description: string, startTime: string, durationMinutes: number) => {
-  const token = await getAccessToken();
-  if (!token) throw new Error("No authentication token available.");
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.provider_token;
+  if (!token) throw new Error("No Google Calendar token found. Please sign in with Google to enable automatic Meet link generation.");
 
   const start = new Date(startTime);
   const end = new Date(start.getTime() + durationMinutes * 60000);

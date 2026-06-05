@@ -17,10 +17,31 @@
   --color-slate-800: #222222;
   --color-slate-900: #1A1A1A;
   --color-slate-950: #0f0f0f;
+  
+  --color-white: #ffffff;
+  --color-black: #000000;
 }
 
 @layer base {
   body {
-    @apply font-sans antialiased bg-slate-50 text-slate-900 selection:bg-slate-900 selection:text-white;
+    @apply font-sans antialiased bg-slate-50 text-slate-900 selection:bg-slate-900 selection:text-white transition-colors duration-300;
   }
+}
+
+.dark {
+  color-scheme: dark;
+  --color-slate-50: #1A1A1A;
+  --color-slate-100: #222222;
+  --color-slate-200: #333333;
+  --color-slate-300: #4A4A4A;
+  --color-slate-400: #666666;
+  --color-slate-500: #8C7B65;
+  --color-slate-600: #999999;
+  --color-slate-700: #D1C9BC;
+  --color-slate-800: #E5E1D8;
+  --color-slate-900: #FDFCFB;
+  --color-slate-950: #F5F2ED;
+  
+  --color-white: #111111;
+  --color-black: #FDFCFB;
 }

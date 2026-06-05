@@ -56,7 +56,7 @@ export function Programs() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="bg-white border border-slate-900 shadow-[12px_12px_0px_#1A1A1A] p-8 md:p-12 flex flex-col md:flex-row gap-12"
+              className="bg-white border border-slate-900 shadow-[12px_12px_0px_var(--color-slate-900)] p-8 md:p-12 flex flex-col md:flex-row gap-12"
             >
               <div className="md:w-1/3">
                 <div className="w-12 h-12 bg-slate-900 text-white flex items-center justify-center mb-6">

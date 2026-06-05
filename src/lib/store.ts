@@ -112,6 +112,26 @@ export async function saveMeeting(meeting: any) {
   }
 }
 
+export async function updateMeeting(id: number | string, data: any) {
+  if (import.meta.env.VITE_SUPABASE_URL) {
+     try {
+       await supabase.from('meetings').update(data).eq('id', id);
+     } catch (e) {
+       console.warn("Supabase update failed", e);
+     }
+  }
+}
+
+export async function deleteMeeting(id: number | string) {
+  if (import.meta.env.VITE_SUPABASE_URL) {
+     try {
+       await supabase.from('meetings').delete().eq('id', id);
+     } catch (e) {
+       console.warn("Supabase delete failed", e);
+     }
+  }
+}
+
 // Background sync support
 export async function syncAll() {
   if (!import.meta.env.VITE_SUPABASE_URL) return;

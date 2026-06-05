@@ -179,7 +179,7 @@ export function StudentDashboard() {
         </header>
 
         {userRole === "new user" && activeTab === "pending" && (
-            <div className="bg-amber-50 border border-amber-200 p-8 shadow-[8px_8px_0px_#1A1A1A] mt-10 text-center">
+            <div className="bg-amber-50 border border-amber-200 p-8 shadow-[8px_8px_0px_var(--color-slate-900)] mt-10 text-center">
               <Clock className="w-12 h-12 text-amber-500 mx-auto mb-4" />
               <h3 className="text-2xl font-serif italic text-amber-900 mb-2">Account Pending Verification</h3>
               <p className="text-amber-700 text-sm max-w-md mx-auto">
@@ -189,7 +189,7 @@ export function StudentDashboard() {
         )}
 
         {isDemo && (
-             <div className="bg-blue-50 border border-blue-200 p-4 shadow-[4px_4px_0px_#1A1A1A] text-blue-900 flex items-center justify-between mb-8">
+             <div className="bg-blue-50 border border-blue-200 p-4 shadow-[4px_4px_0px_var(--color-slate-900)] text-blue-900 flex items-center justify-between mb-8">
                <div className="flex items-center gap-3">
                  <AlertCircle className="w-5 h-5 opacity-80" />
                  <p className="text-sm font-bold">Demo Mode: This is a restricted preview of the student portal.</p>
@@ -200,7 +200,7 @@ export function StudentDashboard() {
         <div className={isDemo ? "opacity-80 pointer-events-none select-none" : ""}>
 
         {notices.length > 0 && (
-          <div className="bg-slate-900 text-white p-4 mb-8 shadow-[6px_6px_0px_#1A1A1A] flex items-center justify-between">
+          <div className="bg-slate-900 text-white p-4 mb-8 shadow-[6px_6px_0px_var(--color-slate-900)] flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Bell className="w-5 h-5 text-amber-400" />
               <div>
@@ -222,7 +222,7 @@ export function StudentDashboard() {
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-slate-900 p-8 shadow-[8px_8px_0px_#1A1A1A] border border-slate-900 text-white relative overflow-hidden"
+              className="bg-slate-900 p-8 shadow-[8px_8px_0px_var(--color-slate-900)] border border-slate-900 text-white relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 w-32 h-32 border border-slate-700 rounded-full opacity-50 -mr-10 -mt-10 pointer-events-none"></div>
               
@@ -269,7 +269,7 @@ export function StudentDashboard() {
                     transition: { staggerChildren: 0.1 }
                   }
                 }}
-                className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A]"
+                className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)]"
               >
                 {tasks.map(task => (
                   <motion.div key={task.id} variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
@@ -292,7 +292,7 @@ export function StudentDashboard() {
           <div className="space-y-8">
             
             {/* Performance Snapshot */}
-            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_#1A1A1A]">
+            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_var(--color-slate-900)]">
               <h3 className="font-bold text-slate-900 mb-6 uppercase text-[10px] tracking-[0.3em]">Performance Snapshot</h3>
               
               <div className="space-y-6">
@@ -308,7 +308,7 @@ export function StudentDashboard() {
 
             {/* Recent Uploads */}
             {(displayedTab === "dashboard" || displayedTab === "materials") && (
-            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_#1A1A1A]">
+            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_var(--color-slate-900)]">
               <h3 className="font-bold text-slate-900 mb-6 uppercase text-[10px] tracking-[0.3em]">Recent Materials</h3>
               <div className="space-y-4">
                 {materials.slice(0, 4).map((m: any) => (
@@ -342,7 +342,7 @@ export function StudentDashboard() {
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: idx * 0.1 }}
-                    className={idx === 0 ? "bg-slate-900 p-8 shadow-[8px_8px_0px_#1A1A1A] border border-slate-900 text-white relative overflow-hidden" : "bg-white p-8 shadow-[8px_8px_0px_#1A1A1A] border border-slate-900 relative"}
+                    className={idx === 0 ? "bg-slate-900 p-8 shadow-[8px_8px_0px_var(--color-slate-900)] border border-slate-900 text-white relative overflow-hidden" : "bg-white p-8 shadow-[8px_8px_0px_var(--color-slate-900)] border border-slate-900 relative"}
                   >
                     {idx === 0 && <div className="absolute top-0 right-0 w-32 h-32 border border-slate-700 rounded-full opacity-50 -mr-10 -mt-10 pointer-events-none"></div>}
                     <div className="flex items-start justify-between relative z-10 flex-col md:flex-row gap-6">
@@ -379,7 +379,7 @@ export function StudentDashboard() {
               </div>
 
               {/* Comprehensive Task Manager */}
-              <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-2 md:p-8">
+              <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-2 md:p-8">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-200 px-4 md:px-0">
                   <div>
                     <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] mb-1">Master Task Register</h3>
@@ -404,7 +404,7 @@ export function StudentDashboard() {
                       transition={{ delay: idx * 0.05 }}
                       className={`border p-4 md:p-6 transition-all flex flex-col md:flex-row md:items-center gap-6 justify-between cursor-pointer group ${
                         task.completed ? 'border-slate-200 bg-slate-50/50' : 
-                        task.active ? 'border-slate-900 shadow-[4px_4px_0px_#1A1A1A] bg-white' : 'border-slate-300 hover:border-slate-900 bg-white'
+                        task.active ? 'border-slate-900 shadow-[4px_4px_0px_var(--color-slate-900)] bg-white' : 'border-slate-300 hover:border-slate-900 bg-white'
                       }`}
                       onClick={() => toggleTask(task.id)}
                     >
@@ -467,7 +467,7 @@ export function StudentDashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Performance Trends */}
-            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_#1A1A1A]">
+            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_var(--color-slate-900)]">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em]">Performance Score Trends</h3>
                 <span className="text-[10px] font-mono text-slate-500">Last 30 Days</span>
@@ -495,7 +495,7 @@ export function StudentDashboard() {
             </div>
 
             {/* Accuracy Trends */}
-            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_#1A1A1A]">
+            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_var(--color-slate-900)]">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em]">Accuracy Rate</h3>
                 <span className="text-[10px] font-mono text-slate-500">Last 30 Days</span>
@@ -523,7 +523,7 @@ export function StudentDashboard() {
             </div>
             
             {/* Time Spent */}
-            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_#1A1A1A] lg:col-span-2">
+            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_var(--color-slate-900)] lg:col-span-2">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em]">Time Investment by Subject</h3>
                 <span className="text-[10px] font-mono text-slate-500">Cumulative Hours</span>
@@ -564,7 +564,7 @@ export function StudentDashboard() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {materials.map((m: any) => (
-                <div key={m.id} onClick={() => setViewingMaterial(m)} className="bg-white border border-slate-900 shadow-[4px_4px_0px_#1A1A1A] p-6 hover:-translate-y-1 transition-transform cursor-pointer">
+                <div key={m.id} onClick={() => setViewingMaterial(m)} className="bg-white border border-slate-900 shadow-[4px_4px_0px_var(--color-slate-900)] p-6 hover:-translate-y-1 transition-transform cursor-pointer">
                   <div className="w-10 h-10 bg-slate-900 text-white flex items-center justify-center mb-4"><BookOpen className="w-5 h-5"/></div>
                   <h4 className="font-bold text-slate-900 mb-1 line-clamp-1">{m.title}</h4>
                   <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-4">Added: {m.date || "Just now"} • {m.size}</p>
@@ -593,7 +593,7 @@ export function StudentDashboard() {
                   <motion.div 
                     key={asm.id}
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }}
-                    className={`border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-6 ${idx === 0 ? 'bg-slate-900 text-white' : 'bg-white'}`}
+                    className={`border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-6 ${idx === 0 ? 'bg-slate-900 text-white' : 'bg-white'}`}
                   >
                     <div className="flex justify-between items-start mb-6">
                       <div>
@@ -622,7 +622,7 @@ export function StudentDashboard() {
             {/* Past Performance / Results */}
             <div>
               <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] mb-6">Recent Results</h3>
-              <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] overflow-x-auto">
+              <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[600px]">
                   <thead>
                     <tr className="border-b-2 border-slate-900">
@@ -685,7 +685,7 @@ export function StudentDashboard() {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_#1A1A1A]">
+                <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_var(--color-slate-900)]">
                   <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-2">Overall Attendance</h3>
                   <p className="text-4xl font-serif italic text-slate-900">{overallAttendanceRate}%</p>
                   <div className="w-full bg-slate-100 h-1.5 mt-4">
@@ -704,7 +704,7 @@ export function StudentDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-6">
+              <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-6">
                 <div className="flex justify-between items-center mb-6">
                    <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-900">Recent Logs (Past 7 Days)</h3>
                    <button onClick={() => alert("Downloading full attendance CSV...")} className="text-[10px] uppercase tracking-widest font-bold text-slate-500 hover:text-slate-900 transition flex items-center gap-1"><Download className="w-3 h-3"/> Export</button>
@@ -766,7 +766,7 @@ export function StudentDashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-slate-900 text-white p-8 shadow-[8px_8px_0px_#1A1A1A]">
+              <div className="bg-slate-900 text-white p-8 shadow-[8px_8px_0px_var(--color-slate-900)]">
                 <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">Total Due Balance</h3>
                 <p className="text-4xl font-serif italic mb-6">₹ 45,000</p>
                 <button onClick={() => setShowPaymentModal(true)} className="w-full bg-white text-slate-900 px-6 py-3 font-bold text-[11px] uppercase tracking-widest hover:bg-slate-200 transition-colors">
@@ -774,7 +774,7 @@ export function StudentDashboard() {
                 </button>
               </div>
               
-              <div className="bg-white border border-slate-900 p-8 shadow-[8px_8px_0px_#1A1A1A]">
+              <div className="bg-white border border-slate-900 p-8 shadow-[8px_8px_0px_var(--color-slate-900)]">
                 <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-2">Payment Summary (Year 1)</h3>
                  <div className="space-y-4 mt-6">
                    <div className="flex justify-between border-b border-slate-200 pb-2">
@@ -793,7 +793,7 @@ export function StudentDashboard() {
               </div>
             </div>
 
-            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-6">
+            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-6">
                <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-900 mb-6">Payment History / Receipts</h3>
                <table className="w-full text-left border-collapse">
                 <thead>
@@ -836,7 +836,7 @@ export function StudentDashboard() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full h-full max-w-6xl bg-white flex flex-col border border-slate-900 shadow-[16px_16px_0px_#1A1A1A]"
+            className="w-full h-full max-w-6xl bg-white flex flex-col border border-slate-900 shadow-[16px_16px_0px_var(--color-slate-900)]"
           >
             <div className="flex items-center justify-between p-4 border-b border-slate-900 bg-slate-50">
               <div className="flex items-center gap-3">
@@ -892,7 +892,7 @@ export function StudentDashboard() {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full h-full max-w-6xl bg-white flex flex-col shadow-[16px_16px_0px_#1A1A1A]"
+            className="w-full h-full max-w-6xl bg-white flex flex-col shadow-[16px_16px_0px_var(--color-slate-900)]"
           >
             <div className="flex items-center justify-between p-6 bg-slate-900 text-white">
               <div>
@@ -938,7 +938,7 @@ export function StudentDashboard() {
             <button onClick={() => setViewingAnalysis(null)} className="px-6 py-2 border border-slate-900 text-slate-900 text-[10px] uppercase font-bold tracking-widest hover:bg-slate-900 hover:text-white transition">Close Analysis</button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_#1A1A1A]">
+            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_var(--color-slate-900)]">
                <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-6">Subject Breakdown</h3>
                <div className="h-48 flex items-end gap-2">
                  <div className="flex-1 bg-slate-200 h-full relative group"><div className="absolute bottom-0 w-full bg-slate-900 min-h-[10%]" style={{ height: '80%' }}></div><span className="absolute -bottom-6 w-full text-center text-[9px] font-mono">PHY</span></div>
@@ -946,7 +946,7 @@ export function StudentDashboard() {
                  <div className="flex-1 bg-slate-200 h-full relative group"><div className="absolute bottom-0 w-full bg-slate-400 min-h-[10%]" style={{ height: '90%' }}></div><span className="absolute -bottom-6 w-full text-center text-[9px] font-mono">MTH</span></div>
                </div>
             </div>
-            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_#1A1A1A]">
+            <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_var(--color-slate-900)]">
                <h3 className="text-[10px] uppercase tracking-widest font-bold text-slate-500 mb-6">Key Insights</h3>
                <ul className="space-y-4 text-sm text-slate-700">
                  <li className="flex items-start gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0"/> Excellent pacing in Mathematics, finished 15 minutes early.</li>
@@ -964,7 +964,7 @@ export function StudentDashboard() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-md bg-white border border-slate-900 shadow-[16px_16px_0px_#1A1A1A] p-8 flex flex-col items-center justify-center relative overflow-hidden"
+            className="w-full max-w-md bg-white border border-slate-900 shadow-[16px_16px_0px_var(--color-slate-900)] p-8 flex flex-col items-center justify-center relative overflow-hidden"
           >
             {paymentSuccess ? (
               <div className="text-center">

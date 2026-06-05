@@ -72,11 +72,11 @@ export function Faculty() {
       <section className="py-24 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {facultyMembers.map((member, index) => (
-          <div key={index} className="flex flex-col lg:flex-row border border-slate-900 bg-white shadow-[12px_12px_0px_#1A1A1A] mb-12">
+          <div key={index} className="flex flex-col lg:flex-row border border-slate-900 bg-white shadow-[12px_12px_0px_var(--color-slate-900)] mb-12">
             {/* Faculty Image placeholder */}
             <div className="lg:w-2/5 bg-slate-200 border-b lg:border-b-0 lg:border-r border-slate-900 relative min-h-[400px]">
                <div className="absolute inset-0 bg-slate-800 mix-blend-multiply opacity-10"></div>
-               <div className="absolute bottom-6 left-6 bg-slate-900 text-white p-4 font-mono text-sm uppercase tracking-widest shadow-[4px_4px_0px_#1A1A1A] z-10">
+               <div className="absolute bottom-6 left-6 bg-slate-900 text-white p-4 font-mono text-sm uppercase tracking-widest shadow-[4px_4px_0px_var(--color-slate-900)] z-10">
                  {member.roleTitle}
                </div>
                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">

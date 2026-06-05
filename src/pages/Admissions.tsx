@@ -84,8 +84,8 @@ export function Admissions() {
   if (isSubmitted) {
     return (
       <div className="min-h-[calc(100vh-5rem)] bg-slate-50 pt-20 flex justify-center items-center">
-        <div className="max-w-md w-full bg-white p-12 border border-slate-900 shadow-[12px_12px_0px_#1A1A1A]">
-          <div className="w-16 h-16 border border-slate-900 text-slate-900 flex items-center justify-center mb-8 bg-slate-50 shadow-[4px_4px_0px_#1A1A1A]">
+        <div className="max-w-md w-full bg-white p-12 border border-slate-900 shadow-[12px_12px_0px_var(--color-slate-900)]">
+          <div className="w-16 h-16 border border-slate-900 text-slate-900 flex items-center justify-center mb-8 bg-slate-50 shadow-[4px_4px_0px_var(--color-slate-900)]">
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <h2 className="text-3xl font-serif italic text-slate-900 mb-4">Application Received.</h2>
@@ -119,7 +119,7 @@ export function Admissions() {
           </p>
         </div>
 
-        <div className="bg-white border border-slate-900 shadow-[12px_12px_0px_#1A1A1A] overflow-hidden flex flex-col md:flex-row">
+        <div className="bg-white border border-slate-900 shadow-[12px_12px_0px_var(--color-slate-900)] overflow-hidden flex flex-col md:flex-row">
           
           {/* Progress Tracker Sidebar */}
           <div className="w-full md:w-1/3 bg-slate-900 text-slate-300 p-8 lg:p-12 border-b md:border-b-0 md:border-r border-slate-900">
@@ -273,7 +273,7 @@ export function Admissions() {
                   <div className="space-y-4">
                     <label className="block cursor-pointer relative">
                       <input type="radio" name="batch" value="alpha" checked={formData.batch === 'alpha'} onChange={handleChange} className="peer sr-only" required />
-                      <div className="border border-slate-200 p-5 peer-checked:border-slate-900 peer-checked:shadow-[6px_6px_0px_#1A1A1A] transition-all hover:border-slate-900 bg-white">
+                      <div className="border border-slate-200 p-5 peer-checked:border-slate-900 peer-checked:shadow-[6px_6px_0px_var(--color-slate-900)] transition-all hover:border-slate-900 bg-white">
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="font-serif italic text-xl text-slate-900">Target NEET 2026 - Alpha</h4>
                           <span className="text-[10px] uppercase tracking-widest font-bold text-amber-600 bg-amber-50 px-2 py-1">Filling Fast</span>
@@ -288,7 +288,7 @@ export function Admissions() {
 
                     <label className="block cursor-pointer relative">
                       <input type="radio" name="batch" value="crash" checked={formData.batch === 'crash'} onChange={handleChange} className="peer sr-only" required />
-                      <div className="border border-slate-200 p-5 peer-checked:border-slate-900 peer-checked:shadow-[6px_6px_0px_#1A1A1A] transition-all hover:border-slate-900 bg-white">
+                      <div className="border border-slate-200 p-5 peer-checked:border-slate-900 peer-checked:shadow-[6px_6px_0px_var(--color-slate-900)] transition-all hover:border-slate-900 bg-white">
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="font-serif italic text-xl text-slate-900">NEET Crash Course '25</h4>
                           <span className="text-[10px] uppercase tracking-widest font-bold text-emerald-600 bg-emerald-50 px-2 py-1">Open</span>
@@ -311,7 +311,7 @@ export function Admissions() {
                     Back
                   </button>
                 ) : <div></div>}
-                <button type="submit" className="bg-slate-900 text-white px-8 py-3 text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-slate-800 transition-colors shadow-[4px_4px_0px_#1A1A1A]">
+                <button type="submit" className="bg-slate-900 text-white px-8 py-3 text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-slate-800 transition-colors shadow-[4px_4px_0px_var(--color-slate-900)]">
                   {step === 4 ? "Submit Application" : step === 1 && !isAuthenticated ? "Sign In / Register" : "Continue"}
                 </button>
               </div>

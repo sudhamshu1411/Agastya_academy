@@ -90,7 +90,7 @@ export function Results() {
                  whileInView={{ opacity: 1, y: 0 }}
                  viewport={{ once: true }}
                  transition={{ delay: idx * 0.1 }}
-                 className="bg-white text-slate-900 p-8 shadow-[8px_8px_0px_#475569] flex flex-col justify-between"
+                 className="bg-white text-slate-900 p-8 shadow-[8px_8px_0px_var(--color-slate-600)] flex flex-col justify-between"
                >
                  <div>
                    <Quote className="w-6 h-6 text-slate-300 mb-6" />

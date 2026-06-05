@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Clock, Calendar, Video, CheckCircle2, ChevronRight, User, CircleAlert, MonitorPlay, CalendarPlus, Users } from "lucide-react";
-import { initAuth, googleSignIn, logout } from "../lib/auth";
+import { Clock, Calendar, Video, CheckCircle2, ChevronRight, User, CircleAlert, MonitorPlay, CalendarPlus, Users, Trash2, Edit } from "lucide-react";
+import { supabase } from "../lib/supabase";
 import { createMeetingEvent } from "../lib/calendar";
-import { saveMeeting, getMeetings, getBatches } from "../lib/store";
+import { saveMeeting, updateMeeting, deleteMeeting, getMeetings, getBatches } from "../lib/store";
 
 export function Scheduler() {
   const navigate = useNavigate();
@@ -17,37 +17,58 @@ export function Scheduler() {
   const [meetingDate, setMeetingDate] = useState("");
   const [meetingTime, setMeetingTime] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(30);
-  
+
+  // For editing
+  const [editingMeetingId, setEditingMeetingId] = useState<string | number | null>(null);
+  const [editLinkOption, setEditLinkOption] = useState("generate"); // or "manual"
+  const [manualLink, setManualLink] = useState("");
+
   const [scheduledMeetings, setScheduledMeetings] = useState<any[]>(getMeetings());
   const [globalBatches, setGlobalBatches] = useState<any[]>(getBatches());
 
   useEffect(() => {
-    const unsubscribe = initAuth(
-      (user, token) => {
-        setUser(user);
-        setNeedsAuth(false);
-      },
-      () => {
-        setNeedsAuth(true);
-        setUser(null);
-      }
-    );
-    return () => unsubscribe();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user);
+      setNeedsAuth(!session?.provider_token);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setUser(session?.user);
+      setNeedsAuth(!session?.provider_token);
+      setScheduledMeetings([...getMeetings()]);
+    });
+
+    const interval = setInterval(() => {
+      setScheduledMeetings([...getMeetings()]);
+    }, 2000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
 
   const handleLogin = async () => {
-    setIsLoggingIn(true);
     try {
-      const result = await googleSignIn();
-      if (result) {
-        setUser(result.user);
-        setNeedsAuth(false);
-      }
-    } catch (err) {
+      setIsLoggingIn(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          scopes: 'https://www.googleapis.com/auth/calendar.events',
+          redirectTo: window.location.href,
+        }
+      });
+      if (error) throw error;
+    } catch (err: any) {
       console.error('Login failed:', err);
-    } finally {
+      alert(`Failed to sign in with Google: ${err.message}`);
       setIsLoggingIn(false);
     }
+  };
+
+  const handleLogoutGoogle = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (!error) navigate('/login');
   };
 
   const students = [
@@ -61,6 +82,48 @@ export function Scheduler() {
   const handleSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTarget || !meetingDate || !meetingTime) return;
+
+    if (editingMeetingId) {
+      let finalLink = "";
+      setIsScheduling(true);
+      try {
+        if (editLinkOption === "generate") {
+          const dateTimeString = `${meetingDate}T${meetingTime}:00`;
+          const title = meetingType === "Live Class" ? `Live Class: ${selectedTarget.name}` : `Meeting: ${selectedTarget.name}`;
+          const eventData = await createMeetingEvent(title, "Edited automated meeting", dateTimeString, durationMinutes);
+          finalLink = eventData.hangoutLink || "";
+        } else {
+          finalLink = manualLink;
+        }
+
+        await updateMeeting(editingMeetingId, {
+          type: meetingType,
+          target: selectedTarget.name,
+          date: meetingDate,
+          time: meetingTime,
+          durationMinutes: durationMinutes,
+          link: finalLink || "No Link generated",
+        });
+
+        setScheduledMeetings(getMeetings());
+        setEditingMeetingId(null);
+        setSelectedTarget(null);
+        setMeetingDate("");
+        setMeetingTime("");
+        setManualLink("");
+      } catch (error: any) {
+        console.error("Editing failed: ", error);
+        alert(`Failed to edit meeting: ${error.message}`);
+      } finally {
+        setIsScheduling(false);
+      }
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to schedule a ${durationMinutes}-minute ${meetingType} with ${selectedTarget.name}?`
+    );
+    if (!confirmed) return;
     
     const dateTimeString = `${meetingDate}T${meetingTime}:00`;
     let title = "";
@@ -78,26 +141,33 @@ export function Scheduler() {
     }
 
     setIsScheduling(true);
+    let finalLink = "";
     try {
-      const eventData = await createMeetingEvent(title, description, dateTimeString, durationMinutes);
+      if (editLinkOption === "generate") {
+        const eventData = await createMeetingEvent(title, description, dateTimeString, durationMinutes);
+        finalLink = eventData.hangoutLink || "";
+      } else {
+        finalLink = manualLink;
+      }
       
       const newMeeting = {
-        id: eventData.id || Date.now().toString(),
+        id: Date.now().toString(),
         title: title,
         type: meetingType,
         target: selectedTarget.name,
         date: meetingDate,
         time: meetingTime,
         durationMinutes: durationMinutes,
-        link: eventData.hangoutLink || "No Link generated",
+        link: finalLink || "No Link generated",
         completed: false
       };
       
-      saveMeeting(newMeeting);
+      await saveMeeting(newMeeting);
       setScheduledMeetings(getMeetings()); // refresh from store
       setSelectedTarget(null);
       setMeetingDate("");
       setMeetingTime("");
+      setManualLink("");
     } catch (error: any) {
       console.error("Scheduling failed: ", error);
       alert(`Failed to schedule meeting: ${error.message}`);
@@ -105,6 +175,33 @@ export function Scheduler() {
       setIsScheduling(false);
     }
   };
+
+  const handleDelete = async (id: string | number) => {
+    if (window.confirm("Are you sure you want to delete this meeting?")) {
+      await deleteMeeting(id);
+      setScheduledMeetings(getMeetings());
+    }
+  };
+
+  const startEdit = (meeting: any) => {
+    setEditingMeetingId(meeting.id);
+    setMeetingType(meeting.type);
+    // Try to find the target object
+    let targetObj = targets.find(t => t.name === meeting.target) || { id: 'custom', name: meeting.target };
+    setSelectedTarget(targetObj);
+    setMeetingDate(meeting.date);
+    setMeetingTime(meeting.time);
+    setDurationMinutes(meeting.durationMinutes);
+    if (meeting.link && meeting.link.includes("meet.google.com")) {
+      setEditLinkOption("generate");
+    } else {
+      setEditLinkOption("manual");
+      setManualLink(meeting.link === "No Link generated" ? "" : meeting.link);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const canSchedule = location.pathname.startsWith('/admin') || location.pathname.startsWith('/founder');
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
@@ -115,14 +212,14 @@ export function Scheduler() {
           <span className="text-[10px] uppercase tracking-[0.3em] font-bold opacity-60 mt-1">Workspace // Scheduler</span>
         </div>
         <div className="flex items-center gap-4">
-          {!needsAuth && user && (
+          {user && (
             <div className="flex items-center gap-6">
               <button onClick={() => navigate(-1)} className="text-[10px] uppercase tracking-widest font-bold text-white/60 hover:text-white transition-colors">
                 ← Back
               </button>
               <div className="flex items-center gap-4 border-l border-white/20 pl-6">
                 <span className="text-xs font-mono opacity-60 hidden sm:inline">{user.email}</span>
-                <button onClick={logout} className="text-[10px] uppercase tracking-widest font-bold text-slate-300 hover:text-white transition-colors">Sign Out</button>
+                {canSchedule && <button onClick={handleLogoutGoogle} className="text-[10px] uppercase tracking-widest font-bold text-slate-300 hover:text-white transition-colors">Sign Out</button>}
               </div>
             </div>
           )}
@@ -134,12 +231,12 @@ export function Scheduler() {
         <div className="mb-12">
           <h1 className="text-4xl font-serif italic text-slate-900 mb-4">Automation Scheduler</h1>
           <p className="text-slate-600 text-sm max-w-2xl">
-            Schedule Live Classes, PTMs, and Interviews directly to your Google Calendar. This tool automatically generates unique Google Meet links and syncs them across all dashboards.
+            {canSchedule ? "Schedule Live Classes, PTMs, and Interviews directly to your Google Calendar. This tool automatically generates unique Google Meet links and syncs them across all dashboards." : "View the schedule of Live Classes, PTMs, and Interviews below."}
           </p>
         </div>
 
-        {needsAuth ? (
-          <div className="bg-white border border-slate-900 p-12 shadow-[8px_8px_0px_#1A1A1A] max-w-md mx-auto text-center">
+        {canSchedule && needsAuth ? (
+          <div className="bg-white border border-slate-900 p-12 shadow-[8px_8px_0px_var(--color-slate-900)] max-w-md mx-auto text-center">
             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CalendarPlus className="w-8 h-8 text-slate-900" />
             </div>
@@ -166,9 +263,10 @@ export function Scheduler() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className={`grid grid-cols-1 ${canSchedule ? 'lg:grid-cols-3' : ''} gap-8`}>
             {/* Target List */}
-            <div className="lg:col-span-1 bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-6 h-fit">
+            {canSchedule && (
+            <div className="lg:col-span-1 bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-6 h-fit">
               <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] mb-4">Event Type</h3>
               <select 
                  className="w-full border-b border-slate-300 py-2 mb-6 text-sm focus:outline-none focus:border-slate-900 transition-colors"
@@ -203,10 +301,12 @@ export function Scheduler() {
                 ))}
               </div>
             </div>
+            )}
 
             {/* Scheduler Form */}
-            <div className="lg:col-span-2 space-y-8">
-              <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
+            <div className={`${canSchedule ? 'lg:col-span-2' : 'col-span-1'} space-y-8`}>
+              {canSchedule && (
+              <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-8">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] mb-6 flex items-center gap-3">
                   <CalendarPlus className="w-4 h-4"/> Schedule Session
                 </h3>
@@ -258,14 +358,72 @@ export function Scheduler() {
                       </div>
                     </div>
 
-                    <div className="pt-6">
+                    <div className="border-t border-slate-200 pt-6 mt-6">
+                      <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-900 mb-4">Meeting Link Option</label>
+                      <div className="flex gap-4 mb-4">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input 
+                            type="radio" 
+                            name="linkOption" 
+                            value="generate" 
+                            checked={editLinkOption === "generate"} 
+                            onChange={() => setEditLinkOption("generate")} 
+                            className="accent-slate-900"
+                          />
+                          Auto-Generate via Google Calendar
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input 
+                            type="radio" 
+                            name="linkOption" 
+                            value="manual" 
+                            checked={editLinkOption === "manual"} 
+                            onChange={() => setEditLinkOption("manual")} 
+                            className="accent-slate-900"
+                          />
+                          Manual Link
+                        </label>
+                      </div>
+                      
+                      {editLinkOption === "manual" && (
+                        <div>
+                          <input 
+                            type="url" 
+                            placeholder="https://meet.google.com/xyz-abcd-efg"
+                            value={manualLink}
+                            onChange={(e) => setManualLink(e.target.value)}
+                            className="w-full border-b border-slate-300 py-2 focus:outline-none focus:border-slate-900 transition-colors font-mono text-sm bg-transparent" 
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-6 flex gap-4">
                       <button 
                         type="submit" 
                         disabled={isScheduling}
-                        className="w-full bg-slate-900 text-white px-8 py-4 text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-slate-800 transition-colors shadow-[4px_4px_0px_#1A1A1A] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                        className="flex-1 bg-slate-900 text-white px-8 py-4 text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-slate-800 transition-colors shadow-[4px_4px_0px_var(--color-slate-900)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                       >
-                        {isScheduling ? 'Generating Link & Booking...' : `Book ${durationMinutes}-Min Session & Generate Meet`}
+                        {isScheduling ? 'Saving...' : editingMeetingId ? 'Update Session' : `Book ${durationMinutes}-Min Session`}
                       </button>
+                      
+                      {editingMeetingId && (
+                         <button 
+                         type="button" 
+                         onClick={() => {
+                           setEditingMeetingId(null);
+                           setSelectedTarget(null);
+                           setMeetingDate("");
+                           setMeetingTime("");
+                           setManualLink("");
+                           setEditLinkOption("generate");
+                         }}
+                         disabled={isScheduling}
+                         className="px-8 py-4 bg-slate-100 text-slate-700 text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-slate-200 transition-colors border border-slate-300 disabled:opacity-50"
+                       >
+                         Cancel
+                       </button>
+                      )}
                     </div>
                   </form>
                 ) : (
@@ -275,10 +433,11 @@ export function Scheduler() {
                   </div>
                 )}
               </div>
+              )}
 
               {/* Scheduled Meetings Log */}
               {scheduledMeetings.length > 0 && (
-                <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
+                <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-8">
                   <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] mb-6 flex items-center gap-3">
                     <CheckCircle2 className="w-4 h-4"/> Global Schedule Log
                   </h3>
@@ -291,32 +450,46 @@ export function Scheduler() {
                             {meeting.type} • {meeting.durationMinutes} mins
                           </span>
                           <p className="font-bold text-slate-900 text-sm mb-1">{meeting.title}</p>
-                          <p className="text-[10px] text-slate-500 uppercase tracking-widest font-mono">
+                          <p className="text-[10px] text-slate-500 uppercase tracking-widest font-mono mb-2 md:mb-0">
                             {meeting.date} at {meeting.time}
                           </p>
                         </div>
-                        {meeting.link && meeting.link.startsWith("http") ? (
-                          <a 
-                            href={meeting.link} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="bg-emerald-50 text-emerald-700 px-4 py-2 border border-emerald-200 text-[10px] uppercase tracking-widest font-bold hover:bg-emerald-100 transition-colors flex items-center gap-2 w-fit shrink-0"
-                          >
-                            <Video className="w-3 h-3" /> Meet Link
-                          </a>
-                        ) : (
-                          <button 
-                            onClick={() => alert("Meeting link is not generated for this session.")}
-                            className="bg-slate-100 text-slate-400 px-4 py-2 border border-slate-200 text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 w-fit shrink-0 cursor-not-allowed"
-                          >
-                            <Video className="w-3 h-3" /> No Link
-                          </button>
-                        )}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {meeting.link && meeting.link.startsWith("http") ? (
+                            <a 
+                              href={meeting.link} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="bg-emerald-50 text-emerald-700 px-4 py-2 border border-emerald-200 text-[10px] uppercase tracking-widest font-bold hover:bg-emerald-100 transition-colors flex items-center gap-2"
+                            >
+                              <Video className="w-3 h-3" /> Meet Link
+                            </a>
+                          ) : (
+                            <button 
+                              onClick={() => alert("Meeting link is not generated for this session.")}
+                              className="bg-slate-100 text-slate-400 px-4 py-2 border border-slate-200 text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 cursor-not-allowed"
+                            >
+                              <Video className="w-3 h-3" /> No Link
+                            </button>
+                          )}
+                          
+                          {canSchedule && (
+                            <div className="flex gap-2">
+                              <button onClick={() => startEdit(meeting)} className="p-2 border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors" title="Edit">
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => handleDelete(meeting.id)} className="p-2 border border-slate-200 text-red-600 hover:bg-red-50 transition-colors" title="Delete">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
+
             </div>
           </div>
         )}

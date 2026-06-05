@@ -278,7 +278,7 @@ export function FacultyDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
               {/* Today's Schedule */}
-              <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
+              <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-8">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
                     <Calendar className="w-4 h-4"/> Upcoming Itinerary
@@ -349,7 +349,7 @@ export function FacultyDashboard() {
             {/* Side Column */}
             <div className="space-y-8">
               {/* Batches Overview */}
-              <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_#1A1A1A]">
+              <div className="bg-white border border-slate-900 p-6 shadow-[8px_8px_0px_var(--color-slate-900)]">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] mb-6">Active Batches ({batches.length})</h3>
                 <div className="space-y-4">
                   {batches.map(b => (
@@ -366,7 +366,7 @@ export function FacultyDashboard() {
               </div>
 
               {/* Quick Actions */}
-              <div className="bg-slate-900 text-white border border-slate-900 p-6 shadow-[8px_8px_0px_#1A1A1A]">
+              <div className="bg-slate-900 text-white border border-slate-900 p-6 shadow-[8px_8px_0px_var(--color-slate-900)]">
                 <h3 className="font-bold text-white/50 uppercase text-[10px] tracking-[0.3em] mb-6">Faculty Logistics</h3>
                 <div className="space-y-3">
                   <button 
@@ -387,7 +387,7 @@ export function FacultyDashboard() {
 
         {activeTab === 'batches' && (
           <div className="space-y-8">
-            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
+            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-8">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
                   <Users className="w-4 h-4" /> Cohort Management
@@ -438,7 +438,7 @@ export function FacultyDashboard() {
 
         {activeTab === 'evaluations' && (
           <div className="space-y-8">
-            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
+            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-8">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4" /> Submissions & Grading
@@ -501,7 +501,7 @@ export function FacultyDashboard() {
         )}
 
         {activeTab === 'students' && (
-          <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
+          <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-8">
             <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] mb-6 flex items-center gap-2">
               <AlertCircle className="w-4 h-4" /> Academic Interventions
             </h3>
@@ -548,7 +548,7 @@ export function FacultyDashboard() {
 
         {activeTab === 'materials' && (
           <div className="space-y-8">
-            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_#1A1A1A] p-8">
+            <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-8">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
                   <FileText className="w-4 h-4" /> Content & Assessments Control
@@ -632,7 +632,7 @@ export function FacultyDashboard() {
 
         {isCohortModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-            <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_#1A1A1A] max-w-md w-full p-8 relative">
+            <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] max-w-md w-full p-8 relative">
               <button 
                 onClick={() => setIsCohortModalOpen(false)}
                 className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors"
@@ -679,7 +679,7 @@ export function FacultyDashboard() {
 
         {rosterView !== null && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-            <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_#1A1A1A] max-w-2xl w-full p-8 relative max-h-[80vh] flex flex-col">
+            <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] max-w-2xl w-full p-8 relative max-h-[80vh] flex flex-col">
               <button 
                 onClick={() => setRosterView(null)}
                 className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors"
@@ -733,7 +733,7 @@ export function FacultyDashboard() {
 
         {isUploadModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-            <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_#1A1A1A] max-w-md w-full p-8 relative">
+            <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] max-w-md w-full p-8 relative">
               <button 
                 onClick={() => setIsUploadModalOpen(false)}
                 className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors"
@@ -829,7 +829,7 @@ export function FacultyDashboard() {
 
         {isDppModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-            <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_#1A1A1A] max-w-md w-full p-8 relative">
+            <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] max-w-md w-full p-8 relative">
               <button 
                 onClick={() => setIsDppModalOpen(false)}
                 className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors"
@@ -948,7 +948,7 @@ export function FacultyDashboard() {
 
         {isAttendanceModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-            <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_#1A1A1A] max-w-xl w-full p-8 relative max-h-[90vh] flex flex-col font-sans">
+            <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] max-w-xl w-full p-8 relative max-h-[90vh] flex flex-col font-sans">
               <button 
                 onClick={() => setIsAttendanceModalOpen(false)}
                 className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors"
@@ -1053,7 +1053,7 @@ export function FacultyDashboard() {
 
       {confirmDialog?.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_#1A1A1A] max-w-sm w-full p-8 relative">
+          <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] max-w-sm w-full p-8 relative">
             <button 
               onClick={() => setConfirmDialog(null)}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors"
@@ -1089,7 +1089,7 @@ export function FacultyDashboard() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full h-full max-w-6xl bg-white flex flex-col border border-slate-900 shadow-[16px_16px_0px_#1A1A1A]"
+            className="w-full h-full max-w-6xl bg-white flex flex-col border border-slate-900 shadow-[16px_16px_0px_var(--color-slate-900)]"
           >
             <div className="flex items-center justify-between p-4 border-b border-slate-900 bg-slate-50">
               <div className="flex items-center gap-3">
@@ -1132,7 +1132,7 @@ export function FacultyDashboard() {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full h-full max-w-6xl bg-white flex flex-col shadow-[16px_16px_0px_#1A1A1A]"
+            className="w-full h-full max-w-6xl bg-white flex flex-col shadow-[16px_16px_0px_var(--color-slate-900)]"
           >
             <div className="flex items-center justify-between p-6 bg-slate-900 text-white">
               <div>

@@ -58,7 +58,7 @@ export function Home() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="bg-white border border-slate-900 p-8 shadow-[12px_12px_0px_#1A1A1A]"
+            className="bg-white border border-slate-900 p-8 shadow-[12px_12px_0px_var(--color-slate-900)]"
           >
             <h2 className="text-3xl font-serif mb-6 text-slate-900">Admission Status</h2>
             <div className="space-y-6">
@@ -150,7 +150,7 @@ export function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row items-center gap-16">
             <div className="lg:w-1/2 relative">
-              <div className="aspect-[4/5] bg-slate-200 w-full max-w-md mx-auto relative overflow-hidden border border-slate-900 shadow-[12px_12px_0px_#1A1A1A]">
+              <div className="aspect-[4/5] bg-slate-200 w-full max-w-md mx-auto relative overflow-hidden border border-slate-900 shadow-[12px_12px_0px_var(--color-slate-900)]">
                 <img 
                   src="/founder.png?v=1" 
                   alt="R.P Kumar" 
@@ -231,7 +231,7 @@ export function Home() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}
-                className="bg-white rounded-none shadow-[16px_16px_0px_#1A1A1A] p-2 border border-slate-900 overflow-hidden relative aspect-video"
+                className="bg-white rounded-none shadow-[16px_16px_0px_var(--color-slate-900)] p-2 border border-slate-900 overflow-hidden relative aspect-video"
               >
                 {/* Header mock */}
                 <div className="h-10 border-b border-slate-900 flex items-center px-4 gap-4 bg-slate-50">
@@ -281,7 +281,7 @@ function FeatureCard({ icon, title, desc }: { icon: React.ReactNode, title: stri
       whileHover={{ y: -5 }}
       className="p-8 border border-slate-900 bg-white hover:bg-slate-100 transition-all duration-300 flex flex-col items-start gap-4"
     >
-      <div className="text-slate-900 border border-slate-900 p-3 bg-slate-50 shadow-[4px_4px_0px_#1A1A1A]">
+      <div className="text-slate-900 border border-slate-900 p-3 bg-slate-50 shadow-[4px_4px_0px_var(--color-slate-900)]">
         {icon}
       </div>
       <h3 className="font-bold text-[11px] uppercase tracking-widest text-slate-900 mt-4">{title}</h3>

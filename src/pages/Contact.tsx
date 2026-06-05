@@ -84,7 +84,7 @@ export function Contact() {
             transition={{ duration: 1, delay: 0.4 }}
             className="lg:w-2/3"
           >
-            <div className="bg-white border border-slate-900 p-8 md:p-12 shadow-[16px_16px_0px_#1A1A1A]">
+            <div className="bg-white border border-slate-900 p-8 md:p-12 shadow-[16px_16px_0px_var(--color-slate-900)]">
               <h2 className="text-2xl font-serif italic mb-8">Send a Message</h2>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
