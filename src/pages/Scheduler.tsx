@@ -22,6 +22,15 @@ export function Scheduler() {
   const [editingMeetingId, setEditingMeetingId] = useState<string | number | null>(null);
   const [editLinkOption, setEditLinkOption] = useState("generate"); // or "manual"
   const [manualLink, setManualLink] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("Physics");
+
+  const subjects = [
+    "Physics", 
+    "Chemistry", 
+    "Biology", 
+    "Mathematics", 
+    "General/Mentoring"
+  ];
 
   const [scheduledMeetings, setScheduledMeetings] = useState<any[]>(getMeetings());
   const [globalBatches, setGlobalBatches] = useState<any[]>(getBatches());
@@ -89,7 +98,8 @@ export function Scheduler() {
       try {
         if (editLinkOption === "generate") {
           const dateTimeString = `${meetingDate}T${meetingTime}:00`;
-          const title = meetingType === "Live Class" ? `Live Class: ${selectedTarget.name}` : `Meeting: ${selectedTarget.name}`;
+          let title = meetingType === "Live Class" ? `Live Class: ${selectedSubject} - ${selectedTarget.name}` : `Meeting: ${selectedTarget.name}`;
+          if (meetingType === 'PTM') title = `PTM: ${selectedTarget.name} (${selectedSubject})`;
           const eventData = await createMeetingEvent(title, "Edited automated meeting", dateTimeString, durationMinutes);
           finalLink = eventData.hangoutLink || "";
         } else {
@@ -99,6 +109,7 @@ export function Scheduler() {
         await updateMeeting(editingMeetingId, {
           type: meetingType,
           target: selectedTarget.name,
+          subject: selectedSubject,
           date: meetingDate,
           time: meetingTime,
           durationMinutes: durationMinutes,
@@ -111,6 +122,7 @@ export function Scheduler() {
         setMeetingDate("");
         setMeetingTime("");
         setManualLink("");
+        setSelectedSubject("Physics");
       } catch (error: any) {
         console.error("Editing failed: ", error);
         alert(`Failed to edit meeting: ${error.message}`);
@@ -130,10 +142,10 @@ export function Scheduler() {
     let description = "";
     
     if (meetingType === "Live Class") {
-       title = `Live Class: ${selectedTarget.name}`;
-       description = `Automated Live Class session for ${selectedTarget.name}. Join below.`;
+       title = `Live Class: ${selectedSubject} - ${selectedTarget.name}`;
+       description = `Automated Live Class session for ${selectedTarget.name} (${selectedSubject}). Join below.`;
     } else if (meetingType === "PTM") {
-       title = `PTM: ${selectedTarget.name} - Agastya Academy`;
+       title = `PTM: ${selectedTarget.name} (${selectedSubject}) - Agastya Academy`;
        description = `Automated Parent-Teacher Meeting for ${selectedTarget.name}. Join below.`;
     } else {
        title = `Interview: ${selectedTarget.name}`;
@@ -155,6 +167,7 @@ export function Scheduler() {
         title: title,
         type: meetingType,
         target: selectedTarget.name,
+        subject: selectedSubject,
         date: meetingDate,
         time: meetingTime,
         durationMinutes: durationMinutes,
@@ -168,6 +181,7 @@ export function Scheduler() {
       setMeetingDate("");
       setMeetingTime("");
       setManualLink("");
+      setSelectedSubject("Physics");
     } catch (error: any) {
       console.error("Scheduling failed: ", error);
       alert(`Failed to schedule meeting: ${error.message}`);
@@ -189,6 +203,7 @@ export function Scheduler() {
     // Try to find the target object
     let targetObj = targets.find(t => t.name === meeting.target) || { id: 'custom', name: meeting.target };
     setSelectedTarget(targetObj);
+    setSelectedSubject(meeting.subject || "Physics");
     setMeetingDate(meeting.date);
     setMeetingTime(meeting.time);
     setDurationMinutes(meeting.durationMinutes);
@@ -319,7 +334,17 @@ export function Scheduler() {
                       </div>
                       <div>
                         <p className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-1">Target {meetingType === "Live Class" ? "Batch" : "Student"}</p>
-                        <p className="font-serif italic text-lg text-slate-900 leading-none">{selectedTarget.name}</p>
+                        <p className="font-serif italic text-lg text-slate-900 leading-none mb-2">{selectedTarget.name}</p>
+                        <div className="flex gap-2 items-center text-sm mt-3">
+                          <label className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Subject:</label>
+                          <select 
+                            value={selectedSubject} 
+                            onChange={(e) => setSelectedSubject(e.target.value)}
+                            className="bg-transparent border-b border-slate-300 focus:outline-none focus:border-slate-900 text-slate-900 font-medium pb-1"
+                          >
+                            {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </div>
                       </div>
                     </div>
 
@@ -417,6 +442,7 @@ export function Scheduler() {
                            setMeetingTime("");
                            setManualLink("");
                            setEditLinkOption("generate");
+                           setSelectedSubject("Physics");
                          }}
                          disabled={isScheduling}
                          className="px-8 py-4 bg-slate-100 text-slate-700 text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-slate-200 transition-colors border border-slate-300 disabled:opacity-50"

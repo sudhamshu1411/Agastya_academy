@@ -30,7 +30,13 @@ export async function revokeMaterial(id: number) {
 }
 
 export function getBatches() {
-  return MEMORY_BATCHES;
+  if (MEMORY_BATCHES.length > 0) return MEMORY_BATCHES;
+  return [
+    { id: 'b1', name: "Target NEET 2026 - Alpha" },
+    { id: 'b2', name: "Target NEET 2026 - Beta" },
+    { id: 'b3', name: "Target JEE 2026 - Alpha" },
+    { id: 'b4', name: "Foundation 10th - Crash Course" }
+  ];
 }
 
 export async function saveBatch(batch: any) {
