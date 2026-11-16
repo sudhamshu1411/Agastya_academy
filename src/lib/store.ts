@@ -1,4 +1,11 @@
-import { supabase, isSupabaseConfigured } from './supabase';
+import { supabase, isSupabaseConfigured, PORTAL_USER_BATCH_TAG } from './supabase';
+
+export function toSafeIntId(id?: number | string): number {
+  const num = Number(id || Date.now());
+  if (!Number.isFinite(num) || num <= 0) return Math.floor(Date.now() / 1000);
+  if (num <= 2000000000) return Math.floor(num);
+  return 100000000 + (Math.floor(num) % 1800000000);
+}
 
 const BATCHES_STORAGE_KEY = 'agastya_batches_v1';
 const ATTENDANCE_STORAGE_KEY = 'agastya_attendance_v1';
@@ -321,7 +328,10 @@ export async function syncAll() {
         if (table === 'assessments') MEMORY_ASSESSMENTS.splice(0, MEMORY_ASSESSMENTS.length, ...data);
         if (table === 'notices') MEMORY_NOTICES.splice(0, MEMORY_NOTICES.length, ...data);
         if (table === 'submissions') MEMORY_SUBMISSIONS.splice(0, MEMORY_SUBMISSIONS.length, ...data);
-        if (table === 'interventions') MEMORY_INTERVENTIONS.splice(0, MEMORY_INTERVENTIONS.length, ...data);
+        if (table === 'interventions') {
+          const cleanInterventions = data.filter((row: any) => row.batch !== PORTAL_USER_BATCH_TAG);
+          MEMORY_INTERVENTIONS.splice(0, MEMORY_INTERVENTIONS.length, ...cleanInterventions);
+        }
         if (table === 'meetings') MEMORY_MEETINGS.splice(0, MEMORY_MEETINGS.length, ...data);
       }
     };

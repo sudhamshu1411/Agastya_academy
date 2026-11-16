@@ -21,7 +21,7 @@ export function StudentDashboard() {
       const isFounderEmail = user?.email?.toLowerCase().trim() === 'sudhamshu1411@gmail.com';
       if (isFounderEmail) r = 'founder';
       if (user?.id) {
-        const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        const { data } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
         if (data?.role) {
            setProfileRole(data.role);
            if (!isFounderEmail) r = data.role;

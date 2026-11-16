@@ -12,7 +12,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       if (session?.user?.id) {
-        const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+        const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
         if (data) setProfileRole(data.role);
       }
       setLoading(false);
@@ -26,7 +26,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (session?.user?.id) {
-        const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+        const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
         if (data) setProfileRole(data.role);
       } else {
         setProfileRole(null);

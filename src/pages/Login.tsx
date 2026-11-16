@@ -102,7 +102,7 @@ export function Login() {
             setError("Sign-up Error: " + (signUpError.message || "Please ensure your email is correct and try again."));
           }
         } else {
-          if (data?.user?.id) {
+          if (data?.user?.id && data?.session?.access_token && !data.session.access_token.startsWith('agastya-token-')) {
             const { error: profileErr } = await supabase.from('profiles').upsert([
               {
                 id: data.user.id,
@@ -136,7 +136,7 @@ export function Login() {
         } else {
           let role = data.user?.user_metadata?.role;
           if (data.user?.id) {
-            const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+            const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).maybeSingle();
             if (profile?.role) {
               role = profile.role;
             }

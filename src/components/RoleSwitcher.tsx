@@ -25,7 +25,7 @@ export function RoleSwitcher() {
         return;
       }
       if (user.id) {
-        const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        const { data } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
         if (data?.role === 'founder' || data?.role === 'admin') {
           setCanSwitchPortals(true);
         }

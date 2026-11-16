@@ -6,6 +6,8 @@ import {
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   DEFAULT_SUPABASE_URL,
+  emailToPortalRowId,
+  emailToDeterministicUuid,
 } from './supabase';
 
 test('Supabase is configured with valid URL and anon key', () => {
@@ -26,4 +28,18 @@ test('sanitizeSupabaseUrl strips quotes, paths, and whitespace', () => {
   const res3 = sanitizeSupabaseUrl('');
   assert.equal(res3.url, 'https://placeholder.supabase.co');
   assert.equal(res3.isPlaceholder, true);
+});
+
+test('emailToPortalRowId generates deterministic 32-bit positive integers', () => {
+  const id1 = emailToPortalRowId('sudhamsh141130@gmail.com');
+  const id2 = emailToPortalRowId('SUDHAMSH141130@gmail.com ');
+  assert.equal(id1, id2);
+  assert.ok(id1 >= 1000000000 && id1 <= 2147483647);
+});
+
+test('emailToDeterministicUuid generates valid deterministic UUID v4 format', () => {
+  const u1 = emailToDeterministicUuid('sudhamsh141130@gmail.com');
+  const u2 = emailToDeterministicUuid('SUDHAMSH141130@GMAIL.COM');
+  assert.equal(u1, u2);
+  assert.match(u1, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-8[0-9a-f]{3}-[0-9a-f]{12}$/);
 });
