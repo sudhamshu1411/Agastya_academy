@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { motion } from "motion/react";
-import { BookOpen, ArrowRight, ShieldCheck, AlertCircle } from "lucide-react";
-import { supabase, _testUrl } from "../supabaseClient";
+import { ShieldCheck, AlertCircle, KeyRound, X } from "lucide-react";
+import { supabase } from "../supabaseClient";
 
 export function Login() {
   const location = useLocation();
@@ -15,7 +14,60 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Password Reset Modal State
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetStatus, setResetStatus] = useState<{ type: "error" | "success"; msg: string } | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
+
   const navigate = useNavigate();
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail.trim()) return;
+    setIsResetting(true);
+    setResetStatus(null);
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
+        redirectTo: `${window.location.origin}/login`,
+      });
+      if (resetError) {
+        setResetStatus({ type: "error", msg: resetError.message });
+      } else {
+        setResetStatus({
+          type: "success",
+          msg: "Password recovery instructions have been sent to your email address.",
+        });
+      }
+    } catch (err: any) {
+      setResetStatus({ type: "error", msg: err.message || "Failed to send password reset email." });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      setIsLoading(true);
+      const targetRedirect = redirect
+        ? `${window.location.origin}/${redirect.replace(/^\//, "")}`
+        : `${window.location.origin}/dashboard`;
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          scopes: "https://www.googleapis.com/auth/calendar.events",
+          redirectTo: targetRedirect,
+        },
+      });
+      if (oauthError) throw oauthError;
+    } catch (err: any) {
+      setError("Google Sign-In Error: " + (err.message || "Unable to initialize Google OAuth."));
+      setIsLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,32 +95,33 @@ export function Login() {
         if (signUpError) {
           console.error("SignUp Error:", signUpError);
           if (signUpError.message.includes('rate limit')) {
-            setError("We've restricted further sign-ups due to too many rapid attempts. Please try again or use the test credentials.");
+            setError("We've restricted further sign-ups due to too many rapid attempts. Please try again shortly.");
           } else if (signUpError.message.toLowerCase().includes('already registered')) {
             setError("This email is already registered. Please switch to 'Sign In' to log into your account.");
           } else {
             setError("Sign-up Error: " + (signUpError.message || "Please ensure your email is correct and try again."));
           }
         } else {
-          // Manually insert into profiles just in case there is no trigger
           if (data?.user?.id) {
-            await supabase.from('profiles').insert([
+            const { error: profileErr } = await supabase.from('profiles').upsert([
               {
                 id: data.user.id,
-                email: formData.identifier,
+                email: trimmedEmail,
                 full_name: isFounder ? "Sudhamshu (Founder)" : formData.fullName,
                 role: isFounder ? "founder" : "new user",
                 phone: formData.phone
               }
             ]);
+            if (profileErr) {
+              console.warn("Profile upsert warning:", profileErr.message);
+            }
           }
-          // Success! Redirect to home dashboard
           if (!data.session) {
             setSuccessMsg("Please check your email to verify your account before logging in.");
             setFormData({ ...formData, password: "" });
           } else {
-            let targetPath = isFounder ? "/founder/dashboard" : "/dashboard";
-            const finalRoute = (redirect && redirect !== "/") ? redirect : targetPath;
+            const targetPath = isFounder ? "/founder/dashboard" : "/dashboard";
+            const finalRoute = (redirect && redirect !== "/") ? (redirect.startsWith("/") ? redirect : `/${redirect}`) : targetPath;
             navigate(finalRoute, { replace: true });
           }
         }
@@ -79,9 +132,8 @@ export function Login() {
         });
 
         if (signInError) {
-          setError("Invalid email or password. Please try again.");
+          setError("Invalid email or password. (" + signInError.message + ")");
         } else {
-          // Success! Redirect based on role from profiles
           let role = data.user?.user_metadata?.role;
           if (data.user?.id) {
             const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
@@ -96,14 +148,13 @@ export function Login() {
           else if (role === 'faculty') targetPath = "/faculty/dashboard";
           else if (role === 'admin') targetPath = "/admin/dashboard";
           
-          const finalRoute = (redirect && redirect !== "/") ? redirect : targetPath;
+          const finalRoute = (redirect && redirect !== "/") ? (redirect.startsWith("/") ? redirect : `/${redirect}`) : targetPath;
           navigate(finalRoute, { replace: true });
         }
       }
     } catch (err: any) {
       console.error("Login Error details:", err);
-      // Removed sbUrl from being exposed in the UI
-      setError("An unexpected authentication error occurred. Please try again later.");
+      setError("Authentication error: " + (err.message || "Please try again later."));
     } finally {
       setIsLoading(false);
     }
@@ -214,12 +265,22 @@ export function Login() {
               />
               {mode === "login" && (
                 <div className="mt-3 flex justify-end">
-                  <a href="#" className="text-[10px] text-slate-500 hover:text-slate-900 transition-colors tracking-wider uppercase font-bold">Forgot Password?</a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResetEmail(formData.identifier);
+                      setResetStatus(null);
+                      setIsResetModalOpen(true);
+                    }}
+                    className="text-[10px] text-slate-500 hover:text-slate-900 transition-colors tracking-wider uppercase font-bold cursor-pointer"
+                  >
+                    Forgot Password?
+                  </button>
                 </div>
               )}
             </div>
 
-            <button disabled={isLoading} type="submit" className="w-full bg-slate-900 text-white py-4 mt-4 text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 shadow-[4px_4px_0px_var(--color-slate-900)] hover:shadow-[2px_2px_0px_var(--color-slate-900)] hover:translate-y-[2px] hover:translate-x-[2px] active:shadow-none active:translate-y-[4px] active:translate-x-[4px] duration-200 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:shadow-[4px_4px_0px_var(--color-slate-900)] disabled:hover:translate-y-0 disabled:hover:translate-x-0">
+            <button disabled={isLoading} type="submit" className="w-full bg-slate-900 text-white py-4 mt-4 text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 shadow-[4px_4px_0px_var(--color-slate-900)] hover:shadow-[2px_2px_0px_var(--color-slate-900)] hover:translate-y-[2px] hover:translate-x-[2px] active:shadow-none active:translate-y-[4px] active:translate-x-[4px] duration-200 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer">
               {isLoading ? (
                  <span className="flex items-center gap-2">
                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -230,6 +291,23 @@ export function Login() {
               )}
             </button>
           </form>
+
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+              className="w-full bg-white border border-slate-900 text-slate-900 py-3.5 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-slate-100 transition-colors flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
+            >
+              <svg width="16" height="16" viewBox="0 0 48 48" className="block shrink-0">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+              </svg>
+              Continue with Google (Calendar Sync)
+            </button>
+          </div>
 
           {successMsg && (
              <div className="mt-6 bg-green-50 border border-green-200 text-green-700 p-3 flex items-start gap-3">
@@ -248,11 +326,11 @@ export function Login() {
           <div className="mt-12 pt-8 border-t border-slate-200 text-center space-y-4">
             {mode === "login" ? (
               <p className="text-[10px] uppercase tracking-widest text-slate-500">
-                Don't have an account? <button onClick={() => { setMode("signup"); setError(null); setSuccessMsg(null); }} className="text-slate-900 font-bold border-b border-slate-900 pb-0.5">Sign Up Now</button>
+                Don't have an account? <button onClick={() => { setMode("signup"); setError(null); setSuccessMsg(null); }} className="text-slate-900 font-bold border-b border-slate-900 pb-0.5 cursor-pointer">Sign Up Now</button>
               </p>
             ) : (
               <p className="text-[10px] uppercase tracking-widest text-slate-500">
-                Already have an account? <button onClick={() => { setMode("login"); setError(null); setSuccessMsg(null); }} className="text-slate-900 font-bold border-b border-slate-900 pb-0.5">Login Here</button>
+                Already have an account? <button onClick={() => { setMode("login"); setError(null); setSuccessMsg(null); }} className="text-slate-900 font-bold border-b border-slate-900 pb-0.5 cursor-pointer">Login Here</button>
               </p>
             )}
             <p className="text-[10px] uppercase tracking-widest text-slate-500">
@@ -261,6 +339,79 @@ export function Login() {
           </div>
         </div>
       </div>
+
+      {/* Password Recovery Modal */}
+      {isResetModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white border-2 border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] max-w-md w-full p-8 relative">
+            <button
+              onClick={() => setIsResetModalOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-slate-900 text-white flex items-center justify-center">
+                <KeyRound className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-serif italic text-2xl text-slate-900">Reset Password</h3>
+                <p className="text-[10px] font-mono uppercase tracking-widest text-slate-500">Account Recovery</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-600 mb-6 leading-relaxed">
+              Enter your registered email address and we will send you a password reset link via Supabase Auth.
+            </p>
+            <form onSubmit={handlePasswordReset} className="space-y-4">
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-slate-900 mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  className="w-full border border-slate-300 px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-slate-900"
+                />
+              </div>
+              {resetStatus && (
+                <div
+                  className={`p-3 border text-xs flex items-start gap-2 ${
+                    resetStatus.type === "success"
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                      : "bg-red-50 border-red-200 text-red-700"
+                  }`}
+                >
+                  {resetStatus.type === "success" ? (
+                    <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  )}
+                  <span>{resetStatus.msg}</span>
+                </div>
+              )}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsResetModalOpen(false)}
+                  className="flex-1 border border-slate-300 text-slate-600 py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-slate-50 cursor-pointer"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={isResetting}
+                  className="flex-1 bg-slate-900 text-white py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
+                >
+                  {isResetting ? "Sending..." : "Send Reset Link"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

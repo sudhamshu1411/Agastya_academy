@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import * as path from 'path';
+import loginHandler from './api/login';
+import sendOtpHandler from './api/send-otp';
+import verifyOtpHandler from './api/verify-otp';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,6 +15,10 @@ app.use(express.json());
 app.get('/api/health', (req, res) => {
   res.json({ status: "ok" });
 });
+
+app.all('/api/login', (req, res) => loginHandler(req as any, res as any));
+app.all('/api/send-otp', (req, res) => sendOtpHandler(req as any, res as any));
+app.all('/api/verify-otp', (req, res) => verifyOtpHandler(req as any, res as any));
 
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {

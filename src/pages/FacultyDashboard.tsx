@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BookOpen, Calendar, Clock, LogOut, CheckCircle2, Circle, Activity, FileText, ChevronRight, Users, AlertCircle, Video, Menu, X, UserCheck, UploadCloud, File, Image as ImageIcon, Film } from "lucide-react";
 import { motion } from "motion/react";
-import { getAssessments, saveAssessment, deleteAssessment, getMaterials, saveMaterial, revokeMaterial, getSubmissions, gradeSubmission, getInterventions, logIntervention, getMeetings, getBatches, saveBatch, getAttendanceLogs, saveAttendanceLogs, getStudentAttendancePercentage } from "../lib/store";
-import { getValidUsers } from "../lib/users";
+import { getAssessments, saveAssessment, deleteAssessment, getMaterials, saveMaterial, revokeMaterial, getSubmissions, gradeSubmission, getInterventions, logIntervention, getMeetings, getBatches, saveBatch, getAttendanceLogs, saveAttendanceLogs, getStudentAttendancePercentage, subscribeToStore, syncAll } from "../lib/store";
+import { fetchProfiles, getValidUsers } from "../lib/users";
 import { getAdmissions } from "../lib/admissions";
+import { supabase } from "../supabaseClient";
 import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function FacultyDashboard() {
@@ -19,7 +20,8 @@ export function FacultyDashboard() {
   const [batches, setBatches] = useState(getBatches());
   const [isCohortModalOpen, setIsCohortModalOpen] = useState(false);
   const [newCohortData, setNewCohortData] = useState({ name: "", syllabus: "" });
-  const [rosterView, setRosterView] = useState<number | null>(null);
+  const [rosterView, setRosterView] = useState<string | number | null>(null);
+  const [rosterStudents, setRosterStudents] = useState<any[]>([]);
 
   // --- Attendance States ---
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
@@ -27,32 +29,62 @@ export function FacultyDashboard() {
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
 
-  const handleOpenAttendance = async (batchName: string) => {
-    const portalUsers = getValidUsers();
-    const admissionsLogs = await getAdmissions();
-    
-    const studentsInBatch = portalUsers
-      .filter((u: any) => u.role === "student")
-      .map((u: any) => {
-        const log = admissionsLogs.find((a: any) => a.email === u.email) || {};
-        const name = u.fullName || log.studentName || "Unknown";
-        return {
+  const loadBatchStudents = async (batchName: string) => {
+    const [portalUsers, admissionsLogs] = await Promise.all([fetchProfiles(), getAdmissions()]);
+    const combined: any[] = [];
+    const seen = new Set<string>();
+
+    portalUsers
+      .filter((u: any) => u.role === "student" || u.role === "new user")
+      .forEach((u: any) => {
+        const emailKey = (u.email || "").toLowerCase();
+        if (emailKey) seen.add(emailKey);
+        const log = admissionsLogs.find((a: any) => (a.email || "").toLowerCase() === emailKey) || {};
+        combined.push({
           email: u.email,
-          name,
-          batch: log.cohort || "N/A"
-        };
-      })
-      .filter((s: any) => {
-        const bNameLower = batchName.toLowerCase();
-        const sBatchLower = s.batch.toLowerCase();
-        
-        return sBatchLower === bNameLower || 
-               bNameLower.includes(sBatchLower) || 
-               sBatchLower.includes(bNameLower) ||
-               (bNameLower.includes("alpha") && sBatchLower.includes("alpha")) ||
-               (bNameLower.includes("beta") && sBatchLower.includes("beta")) ||
-               (bNameLower.includes("gamma") && sBatchLower.includes("gamma"));
+          name: u.fullName || log.studentName || u.email,
+          batch: log.cohort || "Alpha"
+        });
       });
+
+    admissionsLogs
+      .filter((a: any) => a.status === "Admitted" || a.status === "Pending Review")
+      .forEach((a: any) => {
+        const emailKey = (a.email || "").toLowerCase();
+        if (!emailKey || seen.has(emailKey)) return;
+        seen.add(emailKey);
+        combined.push({
+          email: a.email,
+          name: a.studentName || a.email,
+          batch: a.cohort || "Alpha"
+        });
+      });
+
+    const bNameLower = (batchName || "").toLowerCase();
+    const matched = combined.filter((s: any) => {
+      const sBatchLower = (s.batch || "").toLowerCase();
+      return (
+        sBatchLower === bNameLower ||
+        bNameLower.includes(sBatchLower) ||
+        sBatchLower.includes(bNameLower) ||
+        (bNameLower.includes("alpha") && sBatchLower.includes("alpha")) ||
+        (bNameLower.includes("beta") && sBatchLower.includes("beta")) ||
+        (bNameLower.includes("gamma") && sBatchLower.includes("gamma")) ||
+        (bNameLower.includes("crash") && sBatchLower.includes("crash"))
+      );
+    });
+
+    return matched.length > 0 ? matched : combined;
+  };
+
+  const handleOpenRoster = async (batchId: string | number, batchName: string) => {
+    setRosterView(batchId);
+    const list = await loadBatchStudents(batchName);
+    setRosterStudents(list);
+  };
+
+  const handleOpenAttendance = async (batchName: string) => {
+    const studentsInBatch = await loadBatchStudents(batchName);
 
     const initialRecords = studentsInBatch.map((s: any) => ({
       email: s.email,
@@ -78,7 +110,7 @@ export function FacultyDashboard() {
     }));
   };
 
-  const handleSaveAttendance = (e: React.FormEvent) => {
+  const handleSaveAttendance = async (e: React.FormEvent) => {
     e.preventDefault();
     if (attendanceRecords.length === 0) {
       alert("No student records found to save attendance.");
@@ -95,9 +127,12 @@ export function FacultyDashboard() {
       recordedBy: userFullName
     }));
 
-    saveAttendanceLogs(logsToSave);
-    setIsAttendanceModalOpen(false);
-    alert(`Success!\n\nAttendance successfully saved for "${attendanceBatch}" under date ${attendanceDate}.\nPresent: ${attendanceRecords.filter(r => r.status === 'Present').length}, Absent: ${attendanceRecords.filter(r => r.status === 'Absent').length}`);
+    try {
+      await saveAttendanceLogs(logsToSave);
+      setIsAttendanceModalOpen(false);
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -110,27 +145,31 @@ export function FacultyDashboard() {
 
   const [confirmDialog, setConfirmDialog] = useState<{isOpen: boolean, title: string, description: string, onConfirm: () => void} | null>(null);
 
-  const handleCreateCohort = (e: React.FormEvent) => {
+  const handleCreateCohort = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCohortData.name) return;
     const newBatch = {
-      id: Date.now(),
+      id: String(Date.now()),
       name: newCohortData.name,
       size: 0,
       avgScore: 0,
       syllabus: newCohortData.syllabus || "Pending Setup"
     };
-    saveBatch(newBatch);
-    setBatches(getBatches());
-    setIsCohortModalOpen(false);
-    setNewCohortData({ name: "", syllabus: "" });
+    try {
+      await saveBatch(newBatch);
+      setBatches(getBatches());
+      setIsCohortModalOpen(false);
+      setNewCohortData({ name: "", syllabus: "" });
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   const handleUploadNotes = (e: React.FormEvent) => {
     e.preventDefault();
     if (!uploadData.title) return;
     
-    const finalize = (fileUrl: string | null = null, fileType: string | null = null) => {
+    const finalize = async (fileUrl: string | null = null, fileType: string | null = null) => {
       const newRes = { 
         id: Date.now(), 
         title: uploadData.title, 
@@ -139,15 +178,19 @@ export function FacultyDashboard() {
         url: fileUrl || "https://pdfobject.com/pdf/sample.pdf",
         fileType: fileType || "application/pdf"
       };
-      saveMaterial(newRes);
-      setResources(getMaterials());
-      setIsUploadModalOpen(false);
-      setUploadData({ title: "", batch: "" });
-      setUploadFileContext({ file: null, isDragging: false });
+      try {
+        await saveMaterial(newRes);
+        setResources(getMaterials());
+        setIsUploadModalOpen(false);
+        setUploadData({ title: "", batch: "" });
+        setUploadFileContext({ file: null, isDragging: false });
+      } catch (err: any) {
+        alert(err.message);
+      }
     };
 
     if (uploadFileContext.file) {
-      if (uploadFileContext.file.size > 1.5 * 1024 * 1024) { // over 1.5MB use object url (temporary)
+      if (uploadFileContext.file.size > 1.5 * 1024 * 1024) {
         finalize(URL.createObjectURL(uploadFileContext.file), uploadFileContext.file.type);
       } else {
         const reader = new FileReader();
@@ -163,7 +206,7 @@ export function FacultyDashboard() {
     e.preventDefault();
     if (!dppData.title) return;
     
-    const finalize = (fileUrl: string | null = null, fileType: string | null = null) => {
+    const finalize = async (fileUrl: string | null = null, fileType: string | null = null) => {
       const newAsm = { 
         id: Date.now(), 
         type: dppData.type, 
@@ -174,11 +217,15 @@ export function FacultyDashboard() {
         url: fileUrl || "https://pdfobject.com/pdf/sample.pdf",
         fileType: fileType || "application/pdf"
       };
-      saveAssessment(newAsm);
-      setAssessments(getAssessments());
-      setIsDppModalOpen(false);
-      setDppData({ title: "", type: "DPP", batch: "", due: "" });
-      setDppFileContext({ file: null, isDragging: false });
+      try {
+        await saveAssessment(newAsm);
+        setAssessments(getAssessments());
+        setIsDppModalOpen(false);
+        setDppData({ title: "", type: "DPP", batch: "", due: "" });
+        setDppFileContext({ file: null, isDragging: false });
+      } catch (err: any) {
+        alert(err.message);
+      }
     };
 
     if (dppFileContext.file) {
@@ -202,17 +249,17 @@ export function FacultyDashboard() {
   const [viewingExam, setViewingExam] = useState<any>(null);
   
   useEffect(() => {
-    setSubmissions(getSubmissions());
-    setUrgentStudents(getInterventions());
-    setAssessments(getAssessments());
-    setResources(getMaterials());
-    setMeetings(getMeetings());
-    
-    const handleStorageChange = () => {
+    syncAll();
+    const refresh = () => {
+      setSubmissions(getSubmissions());
+      setUrgentStudents(getInterventions());
+      setAssessments(getAssessments());
+      setResources(getMaterials());
       setMeetings(getMeetings());
+      setBatches(getBatches());
     };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    refresh();
+    return subscribeToStore(refresh);
   }, [activeTab]);
 
   return (
@@ -239,6 +286,11 @@ export function FacultyDashboard() {
             <NavItem active={activeTab === 'evaluations'} onClick={() => { setActiveTab('evaluations'); setIsMobileMenuOpen(false); }} icon={<CheckCircle2 className="w-4 h-4"/>} label="Submissions & Grading" />
             <NavItem active={activeTab === 'students'} onClick={() => { setActiveTab('students'); setIsMobileMenuOpen(false); }} icon={<AlertCircle className="w-4 h-4"/>} label="Student Interventions" />
             <NavItem active={activeTab === 'materials'} onClick={() => { setActiveTab('materials'); setIsMobileMenuOpen(false); }} icon={<FileText className="w-4 h-4"/>} label="Content & Uploads" />
+            
+            <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">Scheduling</div>
+            <Link to="/faculty/schedule" onClick={() => setIsMobileMenuOpen(false)}>
+              <NavItem icon={<Calendar className="w-4 h-4"/>} label="Central Scheduler" />
+            </Link>
           </div>
           
           <RoleSwitcher />
@@ -252,9 +304,15 @@ export function FacultyDashboard() {
                 <p className="text-[9px] text-white/60 font-mono">Senior Faculty</p>
               </div>
             </div>
-            <Link to="/login" className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-white hover:bg-slate-200 transition-colors text-[10px] uppercase tracking-widest font-bold mt-4">
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate('/login');
+              }}
+              className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-white hover:bg-slate-200 transition-colors text-[10px] uppercase tracking-widest font-bold mt-4 cursor-pointer"
+            >
               Sign Out
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
@@ -417,11 +475,11 @@ export function FacultyDashboard() {
                     <div className="flex flex-col border-t border-slate-200 pt-4 mt-6 gap-2">
                       <div className="flex gap-2">
                         <button 
-                          onClick={() => setRosterView(b.id)}
-                          className="flex-1 bg-slate-50 border border-slate-300 py-2 text-[10px] uppercase tracking-widest font-bold text-slate-600 hover:bg-slate-100 transition-colors">
+                          onClick={() => handleOpenRoster(b.id, b.name)}
+                          className="flex-1 bg-slate-50 border border-slate-300 py-2 text-[10px] uppercase tracking-widest font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
                             View Roster
                         </button>
-                        <button onClick={() => navigate("/faculty/schedule")} className="flex-1 bg-slate-50 border border-slate-300 py-2 text-[10px] uppercase tracking-widest font-bold text-slate-600 hover:bg-slate-100 transition-colors">Schedule Meet</button>
+                        <button onClick={() => navigate("/faculty/schedule")} className="flex-1 bg-slate-50 border border-slate-300 py-2 text-[10px] uppercase tracking-widest font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">Schedule Meet</button>
                       </div>
                       <button 
                         onClick={() => handleOpenAttendance(b.name)}
@@ -695,7 +753,7 @@ export function FacultyDashboard() {
               </div>
               
               <div className="flex-1 overflow-y-auto min-h-0 border-y border-slate-200 py-4">
-                {batches.find(b => b.id === rosterView)?.size === 0 ? (
+                {rosterStudents.length === 0 ? (
                   <div className="text-center py-12 text-slate-500 text-sm">
                     No students currently enrolled in this cohort.
                   </div>
@@ -704,16 +762,17 @@ export function FacultyDashboard() {
                     <thead>
                       <tr className="border-b border-slate-300">
                         <th className="py-2 px-2 text-[10px] uppercase tracking-widest font-bold text-slate-500">Name</th>
-                        <th className="py-2 px-2 text-[10px] uppercase tracking-widest font-bold text-slate-500 text-right">Status</th>
+                        <th className="py-2 px-2 text-[10px] uppercase tracking-widest font-bold text-slate-500">Email</th>
+                        <th className="py-2 px-2 text-[10px] uppercase tracking-widest font-bold text-slate-500 text-right">Attendance</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {/* Generating mock students based on size */}
-                      {Array.from({ length: batches.find(b => b.id === rosterView)?.size || 0 }).map((_, i) => (
+                      {rosterStudents.map((st, i) => (
                         <tr key={i} className="border-b border-slate-100 hover:bg-slate-50">
-                          <td className="py-3 px-2 text-sm text-slate-900">Student {String.fromCharCode(65 + (i % 26))}</td>
-                          <td className="py-3 px-2 text-right">
-                            <span className="text-[9px] uppercase tracking-widest font-mono bg-emerald-50 text-emerald-700 px-2 py-0.5 border border-emerald-200">Active</span>
+                          <td className="py-3 px-2 text-sm font-bold text-slate-900">{st.name}</td>
+                          <td className="py-3 px-2 text-xs font-mono text-slate-500">{st.email}</td>
+                          <td className="py-3 px-2 text-right font-mono text-xs font-bold text-emerald-700">
+                            {getStudentAttendancePercentage(st.email)}%
                           </td>
                         </tr>
                       ))}

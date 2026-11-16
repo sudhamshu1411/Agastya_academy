@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { BookOpen, Calendar, Clock, LogOut, CheckCircle2, Circle, Activity, FileText, ChevronRight, AlertCircle, Bell, CreditCard, UserCheck, Download, Menu, X } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { motion } from "motion/react";
 import { supabase } from "../supabaseClient";
-import { getMaterials, getAssessments, getNotices, getMeetings, getAttendanceLogs, getStudentAttendancePercentage } from "../lib/store";
+import { getMaterials, getAssessments, getNotices, getMeetings, getAttendanceLogs, getStudentAttendancePercentage, subscribeToStore, syncAll } from "../lib/store";
 import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function StudentDashboard() {
+  const navigate = useNavigate();
   const [sessionUser, setSessionUser] = useState<any>(null);
   const [profileRole, setProfileRole] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -50,16 +51,16 @@ export function StudentDashboard() {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   
   useEffect(() => {
-    setMaterials(getMaterials());
-    setAssessments(getAssessments());
-    setNotices(getNotices());
-    setMeetings(getMeetings());
-    
-    const handleStorageChange = () => {
+    syncAll();
+    const refreshStore = () => {
+      setMaterials(getMaterials());
+      setAssessments(getAssessments());
+      setNotices(getNotices());
       setMeetings(getMeetings());
     };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    refreshStore();
+    const unsub = subscribeToStore(refreshStore);
+    return () => unsub();
   }, []);
 
   const isDemo = userRole === "new user" && activeTab.startsWith("demo_");
@@ -152,10 +153,16 @@ export function StudentDashboard() {
           
           <RoleSwitcher />
           <div className="p-4 border-t border-white/20">
-            <Link to="/" className="flex items-center gap-3 px-3 py-2 text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest font-semibold">
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate("/login");
+              }}
+              className="flex items-center gap-3 px-3 py-2 text-white/60 hover:text-white transition-colors text-[11px] uppercase tracking-widest font-semibold w-full text-left"
+            >
               <LogOut className="w-4 h-4" />
               Sign Out
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
@@ -173,7 +180,7 @@ export function StudentDashboard() {
           {userRole !== "new user" && (
               <div className="hidden text-right md:block">
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mb-1">Attendance</p>
-                <p className="text-3xl font-serif italic text-slate-900">98.5%</p>
+                <p className="text-3xl font-serif italic text-slate-900">{getStudentAttendancePercentage(userEmail)}%</p>
               </div>
           )}
         </header>
@@ -226,29 +233,54 @@ export function StudentDashboard() {
             >
               <div className="absolute top-0 right-0 w-32 h-32 border border-slate-700 rounded-full opacity-50 -mr-10 -mt-10 pointer-events-none"></div>
               
-              <div className="flex items-start justify-between relative z-10">
-                <div>
-                  <span className="inline-flex items-center gap-2 px-2 py-1 bg-white text-slate-900 text-[10px] font-bold uppercase tracking-widest mb-6">
-                    <span className="w-1.5 h-1.5 bg-red-500 animate-pulse"></span> Starting in 15 mins
-                  </span>
-                  <h3 className="text-2xl font-serif italic mb-2">Rotational Dynamics - Advanced Problem Solving</h3>
-                  <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-8">Faculty: R.P Kumar</p>
-                  
-                  <button 
-                    onClick={() => {
-                      alert("Opening Google Meet room for Rotational Dynamics...");
-                      window.open("https://meet.google.com", "_blank");
-                    }}
-                    className="bg-white text-slate-900 px-6 py-3 font-bold shadow hover:bg-slate-200 transition-colors flex items-center gap-2 text-[11px] uppercase tracking-widest"
-                  >
-                    Join Google Meet <ChevronRight className="w-4 h-4"/>
-                  </button>
+              {meetings.length > 0 ? (
+                <div className="flex items-start justify-between relative z-10">
+                  <div>
+                    <span className="inline-flex items-center gap-2 px-2 py-1 bg-white text-slate-900 text-[10px] font-bold uppercase tracking-widest mb-6">
+                      <span className="w-1.5 h-1.5 bg-red-500 animate-pulse"></span> Next Scheduled Live Session
+                    </span>
+                    <h3 className="text-2xl font-serif italic mb-2">{meetings[0].title}</h3>
+                    <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-8">
+                      Target: {meetings[0].target} {meetings[0].subject ? `• Subject: ${meetings[0].subject}` : ''}
+                    </p>
+                    
+                    <button 
+                      onClick={() => {
+                        if (meetings[0].link && meetings[0].link !== "No Link generated") {
+                          window.open(meetings[0].link, "_blank");
+                        } else {
+                          setActiveTab("activities");
+                        }
+                      }}
+                      className="bg-white text-slate-900 px-6 py-3 font-bold shadow hover:bg-slate-200 transition-colors flex items-center gap-2 text-[11px] uppercase tracking-widest"
+                    >
+                      Join Google Meet <ChevronRight className="w-4 h-4"/>
+                    </button>
+                  </div>
+                  <div className="hidden sm:flex flex-col items-end text-slate-400 text-xs font-mono tracking-widest">
+                    <span className="font-bold text-white">{meetings[0].time}</span>
+                    <span className="opacity-50">{meetings[0].date}</span>
+                  </div>
                 </div>
-                <div className="hidden sm:flex flex-col items-end text-slate-400 text-xs font-mono tracking-widest">
-                  <span className="font-bold text-white">09:00 AM</span>
-                  <span className="opacity-50">11:30 AM</span>
+              ) : (
+                <div className="flex items-start justify-between relative z-10">
+                  <div>
+                    <span className="inline-flex items-center gap-2 px-2 py-1 bg-white/10 text-white border border-white/20 text-[10px] font-bold uppercase tracking-widest mb-6">
+                      Live Classroom Status
+                    </span>
+                    <h3 className="text-2xl font-serif italic mb-2">No Active Live Broadcast Right Now</h3>
+                    <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-6">
+                      Check the Central Scheduler or Live & Tasks tab for upcoming sessions.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab("activities")}
+                      className="bg-white text-slate-900 px-6 py-3 font-bold shadow hover:bg-slate-200 transition-colors flex items-center gap-2 text-[11px] uppercase tracking-widest"
+                    >
+                      View Schedule <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </motion.div>
 
             {/* Daily Micro Schedule */}

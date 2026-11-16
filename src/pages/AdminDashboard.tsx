@@ -1,21 +1,27 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Users, BarChart3, Calendar, Settings, AlertCircle, LayoutDashboard, FileText, Bell, Search, CheckCircle2, MoreHorizontal, ShieldAlert, Trash2, Menu, X, Database, Mail, FolderInput, Video, GraduationCap, UploadCloud, Paperclip } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Users, BarChart3, Calendar, Settings, AlertCircle, LayoutDashboard, FileText, Bell, Search, CheckCircle2, MoreHorizontal, ShieldAlert, Trash2, Menu, X, Database, Mail, FolderInput, Video, GraduationCap, UploadCloud, Paperclip, Copy } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { fetchProfiles, deleteUserRow, updateUserRoleAsync } from "../lib/users";
 import { getAdmissions, deleteAdmissionByEmail, updateAdmissionByEmail } from "../lib/admissions";
-import { getNotices, saveNotice, getInterventions, logIntervention, getStudentAttendancePercentage } from "../lib/store";
+import { getNotices, saveNotice, getInterventions, logIntervention, getStudentAttendancePercentage, getMeetings, deleteMeeting, getMaterials, revokeMaterial, getAssessments, deleteAssessment, subscribeToStore, syncAll, MASTER_SQL_SCHEMA_SNIPPET } from "../lib/store";
+import { supabase } from "../supabaseClient";
 import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function AdminDashboard() {
+  const navigate = useNavigate();
   const userFullName = "M. Kumar";
   const [activeTab, setActiveTab] = useState("overview");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [portalUsers, setPortalUsers] = useState<any[]>([]);
   const [admissionsLogs, setAdmissionsLogs] = useState<any[]>([]);
-  const [notices, setNotices] = useState<any[]>([]);
+  const [notices, setNotices] = useState<any[]>(getNotices());
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [meetings, setMeetings] = useState<any[]>(getMeetings());
+  const [materials, setMaterials] = useState<any[]>(getMaterials());
+  const [assessments, setAssessments] = useState<any[]>(getAssessments());
+  const [copiedSql, setCopiedSql] = useState(false);
   const [studentSearch, setStudentSearch] = useState("");
   const [studentBatchFilter, setStudentBatchFilter] = useState("All");
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
@@ -105,11 +111,19 @@ export function AdminDashboard() {
   };
 
   useEffect(() => {
+    syncAll();
     fetchProfiles().then(setPortalUsers);
     getAdmissions().then(setAdmissionsLogs);
-    setNotices(getNotices());
-    setAlerts(getInterventions().filter((i:any) => !i.logged));
-    setSelectedStudentEmails([]); // Clear selection when tab changes
+    const refreshStore = () => {
+      setNotices(getNotices());
+      setAlerts(getInterventions().filter((i: any) => !i.logged));
+      setMeetings(getMeetings());
+      setMaterials(getMaterials());
+      setAssessments(getAssessments());
+    };
+    refreshStore();
+    setSelectedStudentEmails([]);
+    return subscribeToStore(refreshStore);
   }, [activeTab]);
 
   const toggleSelectStudent = (email: string) => {
@@ -119,35 +133,50 @@ export function AdminDashboard() {
   };
 
   const handleDeleteUser = async (email: string) => {
-    const user = portalUsers.find(u => u.email === email);
-    if (user?.id) await deleteUserRow(user.id, email);
-    await deleteAdmissionByEmail(email);
-    fetchProfiles().then(setPortalUsers);
-    getAdmissions().then(setAdmissionsLogs);
+    try {
+      const user = portalUsers.find(u => u.email === email);
+      if (user?.id) await deleteUserRow(user.id, email);
+      await deleteAdmissionByEmail(email);
+      fetchProfiles().then(setPortalUsers);
+      getAdmissions().then(setAdmissionsLogs);
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   const handleUpdateUserRole = async (email: string, role: string) => {
-    const user = portalUsers.find(u => u.email === email);
-    if (user?.id) await updateUserRoleAsync(user.id, email, role);
-    fetchProfiles().then(setPortalUsers);
+    try {
+      const user = portalUsers.find(u => u.email === email);
+      if (user?.id) await updateUserRoleAsync(user.id, email, role);
+      fetchProfiles().then(setPortalUsers);
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
-  const handleResolveAlert = (id: number) => {
-    logIntervention(id, "Resolved by Admin");
-    setAlerts(getInterventions().filter((i:any) => !i.logged));
+  const handleResolveAlert = async (id: number) => {
+    try {
+      await logIntervention(id, "Resolved by Admin");
+      setAlerts(getInterventions().filter((i: any) => !i.logged));
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
-  const handleBroadcast = () => {
+  const handleBroadcast = async () => {
     const msg = window.prompt("Enter notice broadcast message to all students:");
     if (msg) {
-      saveNotice(msg);
-      setNotices(getNotices());
-      alert("Broadcast sent successfully!");
+      try {
+        await saveNotice(msg);
+        setNotices(getNotices());
+      } catch (err: any) {
+        alert(err.message);
+      }
     }
   };
 
   const handleFinalize = () => {
-    alert("Day output finalized.");
+    setActiveTab('analytics');
   };
 
   const performanceData = [
@@ -308,7 +337,7 @@ export function AdminDashboard() {
             </Link>
             
             <div className="px-3 py-2 text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mt-8 mb-2">System</div>
-            <NavItem icon={<Settings className="w-4 h-4"/>} label="Portal Settings" />
+            <NavItem active={activeTab === 'settings'} onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }} icon={<Settings className="w-4 h-4"/>} label="Portal Settings & SQL" />
           </div>
           
           <RoleSwitcher />
@@ -322,9 +351,15 @@ export function AdminDashboard() {
                 <p className="text-[9px] text-white/60 font-mono">Super Admin</p>
               </div>
             </div>
-            <Link to="/login" className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-white hover:bg-slate-200 transition-colors text-[10px] uppercase tracking-widest font-bold mt-4">
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate('/login');
+              }}
+              className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-white hover:bg-slate-200 transition-colors text-[10px] uppercase tracking-widest font-bold mt-4 cursor-pointer"
+            >
               Sign Out
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
@@ -474,7 +509,7 @@ export function AdminDashboard() {
                     <td className="py-4 px-4 font-mono text-xs text-slate-500">{u.phone}</td>
                     <td className="py-4 px-4">
                         <select 
-                          className={`px-2 py-1 text-[9px] uppercase tracking-widest font-bold border focus:outline-none cursor-not-allowed opacity-70 ${
+                          className={`px-2 py-1 text-[9px] uppercase tracking-widest font-bold border focus:outline-none cursor-pointer ${
                             u.role === 'admin' ? 'border-amber-200 bg-amber-50 text-amber-700' :
                             u.role === 'founder' ? 'border-purple-200 bg-purple-50 text-purple-700' :
                             u.role === 'faculty' ? 'border-blue-200 bg-blue-50 text-blue-700' :
@@ -482,7 +517,6 @@ export function AdminDashboard() {
                             'border-emerald-200 bg-emerald-50 text-emerald-700'
                           }`}
                           value={u.role}
-                          disabled={true}
                           onChange={(e) => handleUpdateUserRole(u.email, e.target.value)}
                         >
                           <option value="new user">New User</option>
@@ -663,67 +697,101 @@ export function AdminDashboard() {
                   <FileText className="w-4 h-4" /> Global Content & Assessments Registry
                 </h3>
                 <div className="flex gap-2">
-                  <span className="bg-amber-100 text-amber-900 px-3 py-2 text-[9px] uppercase font-bold tracking-widest border border-amber-200">
-                    Hierarchy: Admin Override
-                  </span>
+                  <button
+                    onClick={() => navigate('/faculty/dashboard')}
+                    className="bg-slate-900 text-white px-4 py-2 text-[9px] uppercase font-bold tracking-widest hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    + Upload via Faculty Portal
+                  </button>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Active Global Assignments/Quizzes */}
                 <div className="border border-slate-300 p-6">
-                  <h4 className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-4 pb-2 border-b border-slate-200">System-Wide Active Assessments</h4>
+                  <h4 className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-4 pb-2 border-b border-slate-200">
+                    System-Wide Active Assessments ({assessments.length})
+                  </h4>
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center group">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[9px] uppercase tracking-widest font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5">Quiz</span>
-                          <span className="text-[9px] uppercase tracking-widest font-mono text-slate-400">Owner: PF-01</span>
+                    {assessments.length === 0 ? (
+                      <p className="text-xs text-slate-500 italic py-4">No active assessments registered in Supabase.</p>
+                    ) : (
+                      assessments.map((asm: any) => (
+                        <div key={asm.id} className="flex justify-between items-center group border-b border-slate-100 pb-3 last:border-0">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[9px] uppercase tracking-widest font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5">{asm.type || "DPP"}</span>
+                              <span className="text-[9px] uppercase tracking-widest font-mono text-slate-400">Due: {asm.due || "Scheduled"}</span>
+                            </div>
+                            <h5 className="font-bold text-sm text-slate-900">{asm.title}</h5>
+                            <p className="text-[10px] text-slate-500 font-mono">{asm.batch}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {asm.url && (
+                              <a href={asm.url} target="_blank" rel="noopener noreferrer" className="text-[10px] uppercase tracking-widest font-bold text-slate-600 hover:text-slate-900 hover:underline">
+                                View
+                              </a>
+                            )}
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await deleteAssessment(asm.id);
+                                  setAssessments(getAssessments());
+                                } catch (err: any) {
+                                  alert(err.message);
+                                }
+                              }}
+                              className="text-[10px] uppercase tracking-widest font-bold text-red-500 hover:text-red-700 hover:underline transition-colors cursor-pointer"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
-                        <h5 className="font-bold text-sm text-slate-900">Rotational Dynamics Quiz 4</h5>
-                        <p className="text-[10px] text-slate-500 font-mono">Alpha Batch • Due: 2 Days</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button className="text-[10px] uppercase tracking-widest font-bold text-slate-400 hover:text-slate-900 hover:underline transition-colors">Edit</button>
-                        <button className="text-[10px] uppercase tracking-widest font-bold text-red-400 hover:text-red-700 hover:underline transition-colors">Delete</button>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-between items-center group">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[9px] uppercase tracking-widest font-bold text-blue-900 bg-blue-100 px-1.5 py-0.5">DPP</span>
-                          <span className="text-[9px] uppercase tracking-widest font-mono text-slate-400">Owner: PF-02</span>
-                        </div>
-                        <h5 className="font-bold text-sm text-slate-900">Mechanics DPP 08</h5>
-                        <p className="text-[10px] text-slate-500 font-mono">All Classes • Due: Tomorrow</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button className="text-[10px] uppercase tracking-widest font-bold text-slate-400 hover:text-slate-900 hover:underline transition-colors">Edit</button>
-                        <button className="text-[10px] uppercase tracking-widest font-bold text-red-400 hover:text-red-700 hover:underline transition-colors">Delete</button>
-                      </div>
-                    </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
                 {/* System-Wide Resources */}
                 <div className="border border-slate-300 p-6">
-                  <h4 className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-4 pb-2 border-b border-slate-200">Global Storage Resources</h4>
+                  <h4 className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-4 pb-2 border-b border-slate-200">
+                    Global Storage Resources ({materials.length})
+                  </h4>
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center group">
-                      <div>
-                        <h5 className="font-bold text-sm text-slate-900 border-b border-transparent group-hover:border-slate-900 inline-block transition-colors cursor-pointer">Mechanics Final Notes.pdf</h5>
-                        <p className="text-[10px] font-mono tracking-widest text-slate-500 uppercase flex gap-2"><span>2.4 MB</span> <span>Owner: PF-01</span></p>
-                      </div>
-                      <button className="text-slate-400 hover:text-red-600 transition-colors text-[10px] uppercase tracking-widest font-bold">Purge File</button>
-                    </div>
-                    <div className="flex justify-between items-center group">
-                      <div>
-                        <h5 className="font-bold text-sm text-slate-900 border-b border-transparent group-hover:border-slate-900 inline-block transition-colors cursor-pointer">Thermodynamics Ref Sheet.pdf</h5>
-                        <p className="text-[10px] font-mono tracking-widest text-slate-500 uppercase flex gap-2"><span>1.1 MB</span> <span>Owner: PF-02</span></p>
-                      </div>
-                      <button className="text-slate-400 hover:text-red-600 transition-colors text-[10px] uppercase tracking-widest font-bold">Purge File</button>
-                    </div>
+                    {materials.length === 0 ? (
+                      <p className="text-xs text-slate-500 italic py-4">No study materials uploaded in Supabase yet.</p>
+                    ) : (
+                      materials.map((mat: any) => (
+                        <div key={mat.id} className="flex justify-between items-center group border-b border-slate-100 pb-3 last:border-0">
+                          <div>
+                            <a
+                              href={mat.url || "#"}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-bold text-sm text-slate-900 hover:underline inline-block transition-colors"
+                            >
+                              {mat.title}
+                            </a>
+                            <p className="text-[10px] font-mono tracking-widest text-slate-500 uppercase flex gap-2">
+                              <span>{mat.size || "PDF"}</span> <span>·</span> <span>{mat.batch || "All Batches"}</span>
+                            </p>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await revokeMaterial(mat.id);
+                                setMaterials(getMaterials());
+                              } catch (err: any) {
+                                alert(err.message);
+                              }
+                            }}
+                            className="text-red-500 hover:text-red-700 transition-colors text-[10px] uppercase tracking-widest font-bold cursor-pointer"
+                          >
+                            Purge File
+                          </button>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -802,78 +870,139 @@ export function AdminDashboard() {
         {activeTab === 'live' && (
           <div className="space-y-8">
             <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-8">
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
-                  <Video className="w-4 h-4" /> Live Institutional Streams
+                  <Video className="w-4 h-4" /> Live Institutional Streams & Scheduled Sessions ({meetings.length})
                 </h3>
-                <div className="flex gap-2">
-                  <span className="bg-red-50 text-red-900 border border-red-200 px-3 py-2 text-[9px] uppercase font-bold tracking-widest flex items-center gap-2">
-                    <span className="w-2 h-2 bg-red-500 animate-pulse rounded-full"></span> 2 Active Sessions
-                  </span>
+                <div className="flex gap-3">
+                  <Link
+                    to="/admin/schedule"
+                    className="bg-slate-900 text-white px-4 py-2 text-[10px] uppercase font-bold tracking-widest hover:bg-slate-800 transition-colors flex items-center gap-2"
+                  >
+                    <Calendar className="w-3.5 h-3.5" /> + Schedule / Edit in Central Scheduler
+                  </Link>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-slate-900 text-white p-6 shadow-[4px_4px_0px_var(--color-slate-900)]">
-                   <div className="flex justify-between items-start mb-4">
-                     <div>
-                       <span className="inline-flex items-center gap-2 px-2 py-1 bg-white/10 text-white border border-white/20 text-[9px] font-bold uppercase tracking-widest mb-3">
-                         <span className="w-1.5 h-1.5 bg-red-500 animate-pulse rounded-full"></span> Live
-                       </span>
-                       <h4 className="font-serif italic text-xl">Rotational Dynamics</h4>
-                       <p className="text-[10px] text-white/50 font-mono tracking-widest uppercase mt-1">Host: PF-01 (R.P Kumar)</p>
-                     </div>
-                     <span className="font-mono text-xs opacity-70">09:00 AM</span>
-                   </div>
-                   <div className="flex gap-2 mt-6">
-                     <button className="flex-1 bg-white text-slate-900 py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-slate-200 transition-colors">Join as Observer</button>
-                     <button className="flex-1 bg-red-500/20 text-red-400 border border-red-500/50 py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-red-500 hover:text-white transition-colors">Force Terminate</button>
-                   </div>
+              {meetings.length === 0 ? (
+                <div className="py-12 text-center border-2 border-dashed border-slate-200 text-slate-500">
+                  <Video className="w-8 h-8 mx-auto mb-3 text-slate-300" />
+                  <p className="text-sm font-bold uppercase tracking-widest mb-1">No Live Classes or PTMs Scheduled</p>
+                  <p className="text-xs mb-4">Use the Central Scheduler to create a Google Meet session for any batch or student.</p>
+                  <Link to="/admin/schedule" className="inline-block bg-slate-900 text-white px-6 py-2.5 text-[10px] uppercase tracking-widest font-bold">
+                    Open Central Scheduler
+                  </Link>
                 </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {meetings.map((m: any, idx: number) => (
+                    <div
+                      key={m.id || idx}
+                      className={idx === 0 ? "bg-slate-900 text-white p-6 shadow-[4px_4px_0px_var(--color-slate-900)]" : "bg-white border border-slate-300 p-6"}
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <span className={`inline-block px-2 py-1 text-[9px] font-bold uppercase tracking-widest mb-3 ${idx === 0 ? 'bg-white/10 text-white border border-white/20' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                            {m.type} · {m.subject || "Physics"}
+                          </span>
+                          <h4 className={`font-serif italic text-xl ${idx === 0 ? 'text-white' : 'text-slate-900'}`}>{m.title}</h4>
+                          <p className={`text-[10px] font-mono tracking-widest uppercase mt-1 ${idx === 0 ? 'text-white/60' : 'text-slate-500'}`}>
+                            Target: {m.target}
+                          </p>
+                        </div>
+                        <div className="text-right font-mono text-xs tabular-nums">
+                          <div>{m.date}</div>
+                          <div className="opacity-70">{m.time} ({m.durationMinutes}m)</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-6">
+                        {m.link && m.link.startsWith("http") ? (
+                          <a
+                            href={m.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex-1 py-3 text-center text-[10px] uppercase font-bold tracking-widest transition-colors ${idx === 0 ? 'bg-white text-slate-900 hover:bg-slate-200' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                          >
+                            Join as Observer
+                          </a>
+                        ) : (
+                          <button
+                            onClick={() => navigate('/admin/schedule')}
+                            className="flex-1 py-3 bg-slate-100 text-slate-600 border border-slate-300 text-[10px] uppercase font-bold tracking-widest hover:bg-slate-200 cursor-pointer"
+                          >
+                            Add Meet Link
+                          </button>
+                        )}
+                        <button
+                          onClick={async () => {
+                            try {
+                              await deleteMeeting(m.id);
+                              setMeetings(getMeetings());
+                            } catch (err: any) {
+                              alert(err.message);
+                            }
+                          }}
+                          className="flex-1 bg-red-500/20 text-red-500 border border-red-500/40 py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-red-600 hover:text-white transition-colors cursor-pointer"
+                        >
+                          Cancel Session
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
-                <div className="bg-slate-900 text-white p-6 shadow-[4px_4px_0px_var(--color-slate-900)]">
-                   <div className="flex justify-between items-start mb-4">
-                     <div>
-                       <span className="inline-flex items-center gap-2 px-2 py-1 bg-white/10 text-white border border-white/20 text-[9px] font-bold uppercase tracking-widest mb-3">
-                         <span className="w-1.5 h-1.5 bg-red-500 animate-pulse rounded-full"></span> Live
-                       </span>
-                       <h4 className="font-serif italic text-xl">Mechanics DPP Discussion</h4>
-                       <p className="text-[10px] text-white/50 font-mono tracking-widest uppercase mt-1">Host: PF-03 (S. Iyer)</p>
-                     </div>
-                     <span className="font-mono text-xs opacity-70">09:30 AM</span>
-                   </div>
-                   <div className="flex gap-2 mt-6">
-                     <button className="flex-1 bg-white text-slate-900 py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-slate-200 transition-colors">Join as Observer</button>
-                     <button className="flex-1 bg-red-500/20 text-red-400 border border-red-500/50 py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-red-500 hover:text-white transition-colors">Force Terminate</button>
-                   </div>
-                </div>
-                
-                <div className="bg-white border border-slate-300 p-6">
-                   <div className="flex justify-between items-start mb-4">
-                     <div>
-                       <span className="inline-flex items-center gap-2 px-2 py-1 bg-slate-100 text-slate-500 border border-slate-200 text-[9px] font-bold uppercase tracking-widest mb-3">
-                         Upcoming
-                       </span>
-                       <h4 className="font-serif italic text-slate-900 text-xl">Doubt Clearing Session</h4>
-                       <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase mt-1">Host: PF-02 (M. Kumar)</p>
-                     </div>
-                     <span className="font-mono text-xs opacity-70">02:00 PM</span>
-                   </div>
-                   <div className="flex mt-6">
-                     <button className="w-full border-t border-slate-200 pt-4 text-center text-slate-500 text-[10px] uppercase font-bold tracking-widest hover:text-red-600 transition-colors">Cancel Session (Admin Override)</button>
-                   </div>
-                </div>
+        {activeTab === 'analytics' && (
+          <div className="space-y-8">
+            <div className="bg-white border border-slate-900 p-8 shadow-[8px_8px_0px_var(--color-slate-900)]">
+              <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] mb-6">Cohort Performance & Attendance Matrix</h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={performanceData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E1D8" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#666', fontWeight: 'bold' }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#666', fontFamily: 'monospace' }} />
+                    <Tooltip
+                      cursor={{ fill: '#F5F2ED' }}
+                      contentStyle={{ backgroundColor: '#1A1A1A', border: 'none', color: '#fff', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
+                    />
+                    <Bar dataKey="avgScore" name="Avg Assessment Score %" fill="#1A1A1A" maxBarSize={48} />
+                    <Bar dataKey="attendance" name="Attendance Rate %" fill="#8C7B65" maxBarSize={48} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>
         )}
 
-        {activeTab !== 'overview' && activeTab !== 'users' && activeTab !== 'students' && activeTab !== 'academics' && activeTab !== 'live' && (
-          <div className="py-20 flex flex-col items-center justify-center border-2 border-dashed border-slate-300">
-            <LayoutDashboard className="w-10 h-10 text-slate-300 mb-4" />
-            <h3 className="text-xl font-serif italic text-slate-700 mb-2">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Module</h3>
-            <p className="text-sm font-mono text-slate-500 max-w-md text-center">This module is part of the extended ERP features and is currently running offline processes.</p>
-            <button onClick={() => setActiveTab('overview')} className="mt-6 border-b border-slate-900 text-slate-900 text-[10px] uppercase font-bold tracking-widest pb-1 hover:opacity-70 transition-opacity">Return to Overview</button>
+        {activeTab === 'settings' && (
+          <div className="space-y-8">
+            <div className="bg-white border border-slate-900 p-8 shadow-[8px_8px_0px_var(--color-slate-900)]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+                <div>
+                  <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] mb-1">Supabase Database & Schema Diagnostics</h3>
+                  <p className="text-xs text-slate-500">
+                    Copy and run this SQL snippet in your Supabase SQL Editor if any table (meetings, attendance, materials, assessments, batches, notices) is missing.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(MASTER_SQL_SCHEMA_SNIPPET);
+                    setCopiedSql(true);
+                    setTimeout(() => setCopiedSql(false), 3000);
+                  }}
+                  className="bg-slate-900 text-white px-5 py-3 text-[10px] uppercase tracking-widest font-bold hover:bg-slate-800 transition-colors flex items-center gap-2 shrink-0 cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5" /> {copiedSql ? "Copied SQL Schema!" : "Copy Master SQL Schema"}
+                </button>
+              </div>
+              <pre className="bg-slate-900 text-slate-200 p-4 text-[11px] font-mono overflow-x-auto max-h-80 border border-slate-800">
+                {MASTER_SQL_SCHEMA_SNIPPET}
+              </pre>
+            </div>
           </div>
         )}
       </main>

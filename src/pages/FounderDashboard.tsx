@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Building2, Users, GraduationCap, DollarSign, Settings, Database, Search, ShieldCheck, Download, Lock, FileOutput, Terminal, Video, FileText, Activity, UserPlus, Calendar } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Building2, Users, GraduationCap, DollarSign, Settings, Database, Search, ShieldCheck, Download, Lock, FileOutput, Terminal, Video, FileText, Activity, UserPlus, Calendar, Copy } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { motion, AnimatePresence } from "motion/react";
 import { getAdmissions, updateAdmissionStatus, deleteAdmissionByEmail, updateAdmissionByEmail, deleteAdmissionById } from "../lib/admissions";
 import { fetchProfiles, deleteUserRow, updateUserRoleAsync, updateUser } from "../lib/users";
+import { getMeetings, deleteMeeting, getMaterials, revokeMaterial, getAssessments, deleteAssessment, subscribeToStore, syncAll, MASTER_SQL_SCHEMA_SNIPPET } from "../lib/store";
+import { supabase } from "../supabaseClient";
 import { ShieldAlert, Trash2, Edit2, Menu, X, CheckCircle2 } from "lucide-react";
 import { RoleSwitcher } from "../components/RoleSwitcher";
 
 export function FounderDashboard() {
+  const navigate = useNavigate();
   const userFullName = "Director";
   const [activeTab, setActiveTab] = useState("executive");
   const [systemLocked, setSystemLocked] = useState(false);
@@ -18,6 +21,10 @@ export function FounderDashboard() {
   const [auditFilter, setAuditFilter] = useState("All");
   const [admissionsLogs, setAdmissionsLogs] = useState<any[]>([]);
   const [portalUsers, setPortalUsers] = useState<any[]>([]);
+  const [meetings, setMeetings] = useState<any[]>(getMeetings());
+  const [materials, setMaterials] = useState<any[]>(getMaterials());
+  const [assessments, setAssessments] = useState<any[]>(getAssessments());
+  const [copiedSql, setCopiedSql] = useState(false);
   
   const [editingStudent, setEditingStudent] = useState<string | null>(null);
   const [editStudentName, setEditStudentName] = useState("");
@@ -32,6 +39,13 @@ export function FounderDashboard() {
   useEffect(() => {
     getAdmissions().then(setAdmissionsLogs);
     fetchProfiles().then(setPortalUsers);
+    syncAll();
+    const unsub = subscribeToStore(() => {
+      setMeetings(getMeetings());
+      setMaterials(getMaterials());
+      setAssessments(getAssessments());
+    });
+    return () => unsub();
   }, [activeTab]);
 
   const handleDeleteStudent = async (email: string) => {
@@ -312,9 +326,15 @@ export function FounderDashboard() {
                 <p className="text-[9px] text-[#D4AF37] font-mono">Level 0 Clearance</p>
               </div>
             </div>
-            <Link to="/login" className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-[#D4AF37] hover:bg-[#F3E5AB] transition-colors text-[10px] uppercase tracking-widest font-bold mt-4">
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate("/login");
+              }}
+              className="flex items-center justify-center w-full px-3 py-2 text-slate-900 bg-[#D4AF37] hover:bg-[#F3E5AB] transition-colors text-[10px] uppercase tracking-widest font-bold mt-4"
+            >
               Exit Secure Portal
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
@@ -435,6 +455,64 @@ export function FounderDashboard() {
               </div>
             </motion.div>
           )}
+
+        {activeTab === 'finance' && (
+          <motion.div
+            key="finance"
+            variants={tabVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="space-y-8"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <KpiCard title="Gross Realized Revenue" value="₹3.40M" subtext="FY 2026-27 • 94% Collection Rate" />
+              <KpiCard title="Pending Receivables" value="₹4.25L" subtext={`${allStudents.filter(s => s.feeStatus !== 'Paid').length} Accounts Pending`} />
+              <KpiCard title="Operating Margin" value="68.4%" subtext="Post Faculty Payroll & Infra" isSecure />
+            </div>
+
+            <div className="bg-white border border-slate-900 p-8 shadow-[8px_8px_0px_var(--color-slate-900)]">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
+                  <DollarSign className="w-4 h-4" /> Cohort Fee Ledger & Revenue Breakdown
+                </h3>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">Live Reconciliation</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[600px]">
+                  <thead>
+                    <tr className="border-b-2 border-slate-900">
+                      <th className="py-3 px-4 text-[10px] uppercase tracking-widest font-bold text-slate-500">Student</th>
+                      <th className="py-3 px-4 text-[10px] uppercase tracking-widest font-bold text-slate-500">Email</th>
+                      <th className="py-3 px-4 text-[10px] uppercase tracking-widest font-bold text-slate-500">Cohort</th>
+                      <th className="py-3 px-4 text-[10px] uppercase tracking-widest font-bold text-slate-500">Annual Fee</th>
+                      <th className="py-3 px-4 text-[10px] uppercase tracking-widest font-bold text-slate-500 text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allStudents.length > 0 ? allStudents.map((s, idx) => (
+                      <tr key={idx} className="border-b border-slate-200 hover:bg-slate-50">
+                        <td className="py-3 px-4 font-bold text-sm text-slate-900">{s.name}</td>
+                        <td className="py-3 px-4 font-mono text-xs text-slate-500">{s.email}</td>
+                        <td className="py-3 px-4 font-mono text-[10px] uppercase tracking-widest text-slate-600">{s.batch}</td>
+                        <td className="py-3 px-4 font-mono text-xs font-bold text-slate-900">₹1,50,000</td>
+                        <td className="py-3 px-4 text-right">
+                          <span className={`px-2 py-1 text-[9px] uppercase tracking-widest font-bold border ${s.feeStatus === 'Paid' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+                            {s.feeStatus}
+                          </span>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-slate-500 text-xs italic">No student fee records found.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Global Student Master Data Viewer */}
         {activeTab === 'students' && (
@@ -827,12 +905,23 @@ export function FounderDashboard() {
                 </div>
 
                 <div className="border border-slate-300 p-6">
-                  <h4 className="text-[10px] uppercase font-bold tracking-widest text-slate-900 mb-4">Recent Migrations</h4>
-                  <div className="space-y-4">
-                    <AuditItem text="Automated Daily Backup Success" time="02:00 AM Today" />
-                    <AuditItem text="Syllabus Schema V4 Applied" time="Yesterday, 11:45 PM" />
-                    <AuditItem text="Purged orphaned auth tokens" time="3 days ago" />
-                  </div>
+                  <h4 className="text-[10px] uppercase font-bold tracking-widest text-slate-900 mb-2">Master Supabase SQL Schema</h4>
+                  <p className="text-xs text-slate-600 mb-4">
+                    Ensure all 10 ERP tables, RLS policies, and RPC functions are provisioned in your Supabase SQL Editor.
+                  </p>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(MASTER_SQL_SCHEMA_SNIPPET);
+                      setCopiedSql(true);
+                      setTimeout(() => setCopiedSql(false), 3000);
+                    }}
+                    className="w-full bg-[#D4AF37] text-slate-900 font-bold text-[10px] uppercase tracking-widest py-3 flex items-center justify-center gap-2 hover:bg-[#F3E5AB] transition-colors mb-4"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> {copiedSql ? "Copied SQL Schema to Clipboard!" : "Copy Master Supabase SQL Schema"}
+                  </button>
+                  <pre className="bg-slate-950 text-emerald-400 p-3 text-[10px] font-mono overflow-x-auto max-h-36 border border-slate-800">
+                    {MASTER_SQL_SCHEMA_SNIPPET}
+                  </pre>
                 </div>
               </div>
             </div>
@@ -1007,58 +1096,78 @@ export function FounderDashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Active Global Assignments/Quizzes */}
                 <motion.div variants={itemVariants} className="border border-slate-300 p-6">
-                  <h4 className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-4 pb-2 border-b border-slate-200">System-Wide Active Assessments</h4>
+                  <h4 className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-4 pb-2 border-b border-slate-200">
+                    System-Wide Active Assessments ({assessments.length})
+                  </h4>
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center group">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[9px] uppercase tracking-widest font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5">Quiz</span>
-                          <span className="text-[9px] uppercase tracking-widest font-mono text-slate-400">Owner: PF-01</span>
+                    {assessments.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic">No active assessments in database.</p>
+                    ) : assessments.map((asm: any) => (
+                      <div key={asm.id} className="flex justify-between items-center group border-b border-slate-100 pb-3 last:border-0">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[9px] uppercase tracking-widest font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5">{asm.type || "Quiz"}</span>
+                            <span className="text-[9px] uppercase tracking-widest font-mono text-slate-400">Batch: {asm.batch}</span>
+                          </div>
+                          <h5 className="font-bold text-sm text-slate-900">{asm.title}</h5>
+                          <p className="text-[10px] text-slate-500 font-mono">Due: {asm.due}</p>
                         </div>
-                        <h5 className="font-bold text-sm text-slate-900">Rotational Dynamics Quiz 4</h5>
-                        <p className="text-[10px] text-slate-500 font-mono">Alpha Batch • Due: 2 Days</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button className="text-[10px] uppercase tracking-widest font-bold text-slate-400 hover:text-slate-900 hover:underline transition-colors">Edit</button>
-                        <button className="text-[10px] uppercase tracking-widest font-bold text-red-400 hover:text-red-700 hover:underline transition-colors">Delete</button>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-between items-center group">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[9px] uppercase tracking-widest font-bold text-blue-900 bg-blue-100 px-1.5 py-0.5">DPP</span>
-                          <span className="text-[9px] uppercase tracking-widest font-mono text-slate-400">Owner: PF-02</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={async () => {
+                              try {
+                                await deleteAssessment(asm.id);
+                                setAssessments(getAssessments());
+                              } catch (e: any) {
+                                alert(e.message || "Failed to delete assessment.");
+                              }
+                            }}
+                            className="text-[10px] uppercase tracking-widest font-bold text-red-500 hover:text-red-700 hover:underline transition-colors"
+                          >
+                            Delete
+                          </button>
                         </div>
-                        <h5 className="font-bold text-sm text-slate-900">Mechanics DPP 08</h5>
-                        <p className="text-[10px] text-slate-500 font-mono">All Classes • Due: Tomorrow</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button className="text-[10px] uppercase tracking-widest font-bold text-slate-400 hover:text-slate-900 hover:underline transition-colors">Edit</button>
-                        <button className="text-[10px] uppercase tracking-widest font-bold text-red-400 hover:text-red-700 hover:underline transition-colors">Delete</button>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </motion.div>
 
                 {/* System-Wide Resources */}
                 <motion.div variants={itemVariants} className="border border-slate-300 p-6">
-                  <h4 className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-4 pb-2 border-b border-slate-200">Global Storage Resources</h4>
+                  <h4 className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-4 pb-2 border-b border-slate-200">
+                    Global Storage Resources ({materials.length})
+                  </h4>
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center group">
-                      <div>
-                        <h5 className="font-bold text-sm text-slate-900 border-b border-transparent group-hover:border-slate-900 inline-block transition-colors cursor-pointer">Mechanics Final Notes.pdf</h5>
-                        <p className="text-[10px] font-mono tracking-widest text-slate-500 uppercase flex gap-2"><span>2.4 MB</span> <span>Owner: PF-01</span></p>
+                    {materials.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic">No study materials uploaded yet.</p>
+                    ) : materials.map((mat: any) => (
+                      <div key={mat.id} className="flex justify-between items-center group border-b border-slate-100 pb-3 last:border-0">
+                        <div>
+                          <h5
+                            onClick={() => mat.url ? window.open(mat.url, "_blank") : null}
+                            className="font-bold text-sm text-slate-900 border-b border-transparent group-hover:border-slate-900 inline-block transition-colors cursor-pointer"
+                          >
+                            {mat.title}
+                          </h5>
+                          <p className="text-[10px] font-mono tracking-widest text-slate-500 uppercase flex gap-2">
+                            <span>{mat.size}</span> <span>• {mat.date || "Uploaded"}</span>
+                          </p>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await revokeMaterial(mat.id);
+                              setMaterials(getMaterials());
+                            } catch (e: any) {
+                              alert(e.message || "Failed to purge material.");
+                            }
+                          }}
+                          className="text-slate-400 hover:text-red-600 transition-colors text-[10px] uppercase tracking-widest font-bold"
+                        >
+                          Purge File
+                        </button>
                       </div>
-                      <button className="text-slate-400 hover:text-red-600 transition-colors text-[10px] uppercase tracking-widest font-bold">Purge File</button>
-                    </div>
-                    <div className="flex justify-between items-center group">
-                      <div>
-                        <h5 className="font-bold text-sm text-slate-900 border-b border-transparent group-hover:border-slate-900 inline-block transition-colors cursor-pointer">Thermodynamics Ref Sheet.pdf</h5>
-                        <p className="text-[10px] font-mono tracking-widest text-slate-500 uppercase flex gap-2"><span>1.1 MB</span> <span>Owner: PF-02</span></p>
-                      </div>
-                      <button className="text-slate-400 hover:text-red-600 transition-colors text-[10px] uppercase tracking-widest font-bold">Purge File</button>
-                    </div>
+                    ))}
                   </div>
                 </motion.div>
               </div>
@@ -1077,67 +1186,76 @@ export function FounderDashboard() {
             className="space-y-8"
           >
             <div className="bg-white border border-slate-900 shadow-[8px_8px_0px_var(--color-slate-900)] p-8">
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
                   <Video className="w-4 h-4" /> Live Institutional Streams
                 </h3>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-3">
                   <span className="bg-red-50 text-red-900 border border-red-200 px-3 py-2 text-[9px] uppercase font-bold tracking-widest flex items-center gap-2">
-                    <span className="w-2 h-2 bg-red-500 animate-pulse rounded-full"></span> 2 Active Sessions
+                    <span className="w-2 h-2 bg-red-500 animate-pulse rounded-full"></span> {meetings.length} Scheduled Sessions
                   </span>
+                  <Link
+                    to="/founder/schedule"
+                    className="bg-slate-900 text-[#D4AF37] px-4 py-2 text-[10px] uppercase font-bold tracking-widest hover:bg-slate-800 transition-colors"
+                  >
+                    + Open Central Scheduler
+                  </Link>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <motion.div variants={itemVariants} className="bg-slate-900 text-white p-6 shadow-[4px_4px_0px_var(--color-slate-900)]">
-                   <div className="flex justify-between items-start mb-4">
-                     <div>
-                       <span className="inline-flex items-center gap-2 px-2 py-1 bg-white/10 text-white border border-white/20 text-[9px] font-bold uppercase tracking-widest mb-3">
-                         <span className="w-1.5 h-1.5 bg-red-500 animate-pulse rounded-full"></span> Live
-                       </span>
-                       <h4 className="font-serif italic text-xl">Rotational Dynamics</h4>
-                       <p className="text-[10px] text-white/50 font-mono tracking-widest uppercase mt-1">Host: PF-01 (R.P Kumar)</p>
-                     </div>
-                     <span className="font-mono text-xs opacity-70">09:00 AM</span>
-                   </div>
-                   <div className="flex gap-2 mt-6">
-                     <button className="flex-1 bg-white text-slate-900 py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-slate-200 transition-colors">Join as Observer</button>
-                     <button className="flex-1 bg-red-500/20 text-red-400 border border-red-500/50 py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-red-500 hover:text-white transition-colors">Force Terminate</button>
-                   </div>
-                </motion.div>
-
-                <motion.div variants={itemVariants} className="bg-slate-900 text-white p-6 shadow-[4px_4px_0px_var(--color-slate-900)]">
-                   <div className="flex justify-between items-start mb-4">
-                     <div>
-                       <span className="inline-flex items-center gap-2 px-2 py-1 bg-white/10 text-white border border-white/20 text-[9px] font-bold uppercase tracking-widest mb-3">
-                         <span className="w-1.5 h-1.5 bg-red-500 animate-pulse rounded-full"></span> Live
-                       </span>
-                       <h4 className="font-serif italic text-xl">Mechanics DPP Discussion</h4>
-                       <p className="text-[10px] text-white/50 font-mono tracking-widest uppercase mt-1">Host: PF-03 (S. Iyer)</p>
-                     </div>
-                     <span className="font-mono text-xs opacity-70">09:30 AM</span>
-                   </div>
-                   <div className="flex gap-2 mt-6">
-                     <button className="flex-1 bg-white text-slate-900 py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-slate-200 transition-colors">Join as Observer</button>
-                     <button className="flex-1 bg-red-500/20 text-red-400 border border-red-500/50 py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-red-500 hover:text-white transition-colors">Force Terminate</button>
-                   </div>
-                </motion.div>
-                
-                <motion.div variants={itemVariants} className="bg-white border border-slate-300 p-6">
-                   <div className="flex justify-between items-start mb-4">
-                     <div>
-                       <span className="inline-flex items-center gap-2 px-2 py-1 bg-slate-100 text-slate-500 border border-slate-200 text-[9px] font-bold uppercase tracking-widest mb-3">
-                         Upcoming
-                       </span>
-                       <h4 className="font-serif italic text-slate-900 text-xl">Doubt Clearing Session</h4>
-                       <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase mt-1">Host: PF-02 (M. Kumar)</p>
-                     </div>
-                     <span className="font-mono text-xs opacity-70">02:00 PM</span>
-                   </div>
-                   <div className="flex mt-6">
-                     <button className="w-full border-t border-slate-200 pt-4 text-center text-slate-500 text-[10px] uppercase font-bold tracking-widest hover:text-red-600 transition-colors">Cancel Session (Admin Override)</button>
-                   </div>
-                </motion.div>
+                {meetings.length === 0 ? (
+                  <div className="col-span-2 p-8 border border-dashed border-slate-300 text-center">
+                    <p className="text-sm text-slate-500 italic mb-4">No live classes or PTMs currently scheduled.</p>
+                    <Link to="/founder/schedule" className="inline-block bg-slate-900 text-white px-6 py-2.5 text-[10px] uppercase font-bold tracking-widest">
+                      Schedule First Session
+                    </Link>
+                  </div>
+                ) : meetings.map((m: any, idx: number) => (
+                  <motion.div
+                    key={m.id}
+                    variants={itemVariants}
+                    className={idx === 0 ? "bg-slate-900 text-white p-6 shadow-[4px_4px_0px_var(--color-slate-900)]" : "bg-white border border-slate-300 p-6"}
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <span className={`inline-flex items-center gap-2 px-2 py-1 text-[9px] font-bold uppercase tracking-widest mb-3 ${idx === 0 ? 'bg-white/10 text-white border border-white/20' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                          {idx === 0 && <span className="w-1.5 h-1.5 bg-red-500 animate-pulse rounded-full"></span>}
+                          {m.type === 'ptm' ? 'Parent-Teacher Meeting' : m.type === 'interview' ? '1-on-1 Interview' : 'Live Class'}
+                        </span>
+                        <h4 className={`font-serif italic text-xl ${idx === 0 ? 'text-white' : 'text-slate-900'}`}>{m.title}</h4>
+                        <p className={`text-[10px] font-mono tracking-widest uppercase mt-1 ${idx === 0 ? 'text-white/60' : 'text-slate-500'}`}>
+                          Target: {m.target} {m.subject ? `• Subject: ${m.subject}` : ''}
+                        </p>
+                      </div>
+                      <div className="text-right font-mono text-xs opacity-80">
+                        <div>{m.date}</div>
+                        <div>{m.time}</div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-6">
+                      <button
+                        onClick={() => m.link && m.link !== "No Link generated" ? window.open(m.link, "_blank") : navigate("/founder/schedule")}
+                        className={`flex-1 py-3 text-[10px] uppercase font-bold tracking-widest transition-colors ${idx === 0 ? 'bg-white text-slate-900 hover:bg-slate-200' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                      >
+                        {m.link && m.link !== "No Link generated" ? "Join as Observer" : "Edit in Scheduler"}
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await deleteMeeting(m.id);
+                            setMeetings(getMeetings());
+                          } catch (e: any) {
+                            alert(e.message || "Failed to terminate session.");
+                          }
+                        }}
+                        className="flex-1 bg-red-500/20 text-red-500 border border-red-500/50 py-3 text-[10px] uppercase font-bold tracking-widest hover:bg-red-500 hover:text-white transition-colors"
+                      >
+                        Force Terminate
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             </div>
           </motion.div>
