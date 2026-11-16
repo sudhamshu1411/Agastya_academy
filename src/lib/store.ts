@@ -1,13 +1,35 @@
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
+
+const BATCHES_STORAGE_KEY = 'agastya_batches_v1';
+const ATTENDANCE_STORAGE_KEY = 'agastya_attendance_v1';
+
+function loadLocalList(key: string): any[] {
+  if (typeof window === 'undefined' || !window.localStorage) return [];
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalList(key: string, list: any[]) {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(list));
+  } catch {
+    // ignore storage quota errors
+  }
+}
 
 const MEMORY_MATERIALS: any[] = [];
-const MEMORY_BATCHES: any[] = [];
+const MEMORY_BATCHES: any[] = loadLocalList(BATCHES_STORAGE_KEY);
 const MEMORY_ASSESSMENTS: any[] = [];
 const MEMORY_NOTICES: any[] = [];
 const MEMORY_SUBMISSIONS: any[] = [];
 const MEMORY_INTERVENTIONS: any[] = [];
 const MEMORY_MEETINGS: any[] = [];
-const MEMORY_ATTENDANCE: any[] = [];
+const MEMORY_ATTENDANCE: any[] = loadLocalList(ATTENDANCE_STORAGE_KEY);
 
 export const MASTER_SQL_SCHEMA_SNIPPET = `-- Run in Supabase SQL Editor to ensure all ERP tables exist:
 CREATE TABLE IF NOT EXISTS public.meetings (
@@ -69,7 +91,7 @@ DROP POLICY IF EXISTS "Allow all interventions" ON public.interventions;
 CREATE POLICY "Allow all interventions" ON public.interventions FOR ALL USING (true) WITH CHECK (true);`;
 
 function ensureSupabaseConfigured() {
-  if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+  if (!isSupabaseConfigured) {
     throw new Error("Supabase credentials (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY) are not configured.");
   }
 }
@@ -136,11 +158,8 @@ export async function saveBatch(batch: any) {
     ...batch,
     id: String(batch.id || Date.now())
   };
-  const { error } = await supabase.from('batches').insert([payload]);
-  if (error) {
-    throw new Error(`Supabase batches insert failed: ${error.message}. Please run the Master SQL Schema in Supabase SQL Editor.`);
-  }
   MEMORY_BATCHES.push(payload);
+  saveLocalList(BATCHES_STORAGE_KEY, MEMORY_BATCHES);
   notifyStoreListeners();
 }
 
@@ -277,11 +296,8 @@ export function getAttendanceLogs() {
 
 export async function saveAttendanceLogs(newRecords: any[]) {
   ensureSupabaseConfigured();
-  const { error } = await supabase.from('attendance').insert(newRecords);
-  if (error) {
-    throw new Error(`Supabase attendance insert failed: ${error.message}. Please run the Master SQL Schema in Supabase SQL Editor.`);
-  }
   MEMORY_ATTENDANCE.unshift(...newRecords);
+  saveLocalList(ATTENDANCE_STORAGE_KEY, MEMORY_ATTENDANCE);
   notifyStoreListeners();
 }
 
@@ -296,19 +312,17 @@ export function getStudentAttendancePercentage(email: string): number {
 
 // Background sync support
 export async function syncAll() {
-  if (!import.meta.env.VITE_SUPABASE_URL) return;
+  if (!isSupabaseConfigured) return;
   try {
     const fetchTable = async (table: string, orderField: string = 'created_at', ascending: boolean = false) => {
       const { data, error } = await supabase.from(table).select('*').order(orderField, { ascending });
       if (!error && Array.isArray(data)) {
         if (table === 'materials') MEMORY_MATERIALS.splice(0, MEMORY_MATERIALS.length, ...data);
-        if (table === 'batches' && data.length > 0) MEMORY_BATCHES.splice(0, MEMORY_BATCHES.length, ...data);
         if (table === 'assessments') MEMORY_ASSESSMENTS.splice(0, MEMORY_ASSESSMENTS.length, ...data);
         if (table === 'notices') MEMORY_NOTICES.splice(0, MEMORY_NOTICES.length, ...data);
         if (table === 'submissions') MEMORY_SUBMISSIONS.splice(0, MEMORY_SUBMISSIONS.length, ...data);
         if (table === 'interventions') MEMORY_INTERVENTIONS.splice(0, MEMORY_INTERVENTIONS.length, ...data);
         if (table === 'meetings') MEMORY_MEETINGS.splice(0, MEMORY_MEETINGS.length, ...data);
-        if (table === 'attendance') MEMORY_ATTENDANCE.splice(0, MEMORY_ATTENDANCE.length, ...data);
       }
     };
 
@@ -316,11 +330,9 @@ export async function syncAll() {
       fetchTable('meetings'),
       fetchTable('materials', 'id', false),
       fetchTable('assessments', 'id', false),
-      fetchTable('batches', 'id', true),
       fetchTable('notices'),
       fetchTable('submissions', 'id', false),
       fetchTable('interventions', 'id', false),
-      fetchTable('attendance')
     ]);
     notifyStoreListeners();
   } catch (e) {

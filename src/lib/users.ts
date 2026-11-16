@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 
 export const INITIAL_USERS = [
   { email: "student@agastya.edu", role: "student", fullName: "Demo Student", phone: "" },
@@ -7,7 +7,7 @@ export const INITIAL_USERS = [
 const MEMORY_USERS: any[] = [];
 
 export async function fetchProfiles() {
-  if (!import.meta.env.VITE_SUPABASE_URL) {
+  if (!isSupabaseConfigured) {
     return [];
   }
   const { data, error } = await supabase.from('profiles').select('*');
@@ -35,7 +35,7 @@ export function getValidUsers() {
 }
 
 export async function registerUser(user: any) {
-  if (!import.meta.env.VITE_SUPABASE_URL) {
+  if (!isSupabaseConfigured) {
     throw new Error("Supabase URL is not configured.");
   }
   const { error } = await supabase.from('profiles').upsert([
@@ -54,7 +54,7 @@ export async function registerUser(user: any) {
 }
 
 export async function deleteUserRow(id: string, email: string) {
-  if (!import.meta.env.VITE_SUPABASE_URL || !id) {
+  if (!isSupabaseConfigured || !id) {
     throw new Error("Cannot delete user: missing user ID or Supabase configuration.");
   }
   const { error: rpcError } = await supabase.rpc('delete_user', { user_id: id });
@@ -80,7 +80,7 @@ export async function deleteUser(email: string) {
 }
 
 export async function updateUserRoleAsync(id: string, email: string, role: string) {
-  if (!import.meta.env.VITE_SUPABASE_URL || !id) {
+  if (!isSupabaseConfigured || !id) {
     throw new Error("Cannot update role: missing user ID or Supabase configuration.");
   }
   const { error } = await supabase.rpc('update_user_role', { target_user_id: id, new_role: role });
@@ -112,7 +112,7 @@ export async function updateUserRole(email: string, role: string) {
 }
 
 export async function updateUser(email: string, updates: any) {
-  if (!import.meta.env.VITE_SUPABASE_URL) {
+  if (!isSupabaseConfigured) {
     throw new Error("Supabase URL is not configured.");
   }
   const payload: any = {};
