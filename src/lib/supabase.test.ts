@@ -8,6 +8,7 @@ import {
   DEFAULT_SUPABASE_URL,
   emailToPortalRowId,
   emailToDeterministicUuid,
+  isUserEmailVerified,
 } from './supabase';
 
 test('Supabase is configured with valid URL and anon key', () => {
@@ -42,4 +43,33 @@ test('emailToDeterministicUuid generates valid deterministic UUID v4 format', ()
   const u2 = emailToDeterministicUuid('SUDHAMSH141130@GMAIL.COM');
   assert.equal(u1, u2);
   assert.match(u1, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-8[0-9a-f]{3}-[0-9a-f]{12}$/);
+});
+
+test('isUserEmailVerified rejects unverified signups and accepts confirmed users', () => {
+  assert.equal(isUserEmailVerified(null), false);
+  assert.equal(
+    isUserEmailVerified({
+      id: '123',
+      email: 'unverified@example.com',
+      email_confirmed_at: null,
+      user_metadata: { email_verified: false },
+    }),
+    false
+  );
+  assert.equal(
+    isUserEmailVerified({
+      id: '123',
+      email: 'verified@example.com',
+      email_confirmed_at: '2026-11-17T10:00:00Z',
+    }),
+    true
+  );
+  assert.equal(
+    isUserEmailVerified({
+      id: '123',
+      email: 'oauth@example.com',
+      app_metadata: { provider: 'google' },
+    }),
+    true
+  );
 });

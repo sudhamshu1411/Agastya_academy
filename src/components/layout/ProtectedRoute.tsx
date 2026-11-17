@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
+import { isUserEmailVerified } from "../../lib/supabase";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<any>(null);
@@ -10,6 +11,12 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session && !isUserEmailVerified(session.user)) {
+        await supabase.auth.signOut();
+        setSession(null);
+        setLoading(false);
+        return;
+      }
       setSession(session);
       if (session?.user?.id) {
         const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
@@ -24,6 +31,11 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session && !isUserEmailVerified(session.user)) {
+        setSession(null);
+        setProfileRole(null);
+        return;
+      }
       setSession(session);
       if (session?.user?.id) {
         const { data } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
@@ -44,7 +56,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!session) {
+  if (!session || !isUserEmailVerified(session.user)) {
     return <Navigate to="/login" replace />;
   }
 
@@ -53,14 +65,18 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const role = isFounderEmail ? 'founder' : (profileRole || session.user?.user_metadata?.role);
 
   if (role === "new user" && location.pathname !== "/dashboard" && location.pathname !== "/login") {
-    // Only founders can access founder dashboard
-    if (location.pathname.startsWith('/founder')) return <Navigate to="/dashboard" replace />;
-    if (location.pathname.startsWith('/admin')) return <Navigate to="/dashboard" replace />;
-    if (location.pathname.startsWith('/faculty')) return <Navigate to="/dashboard" replace />;
     return <Navigate to="/dashboard" replace />;
   }
-  
+
   if (location.pathname.startsWith('/founder') && role !== 'founder') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (location.pathname.startsWith('/admin') && role !== 'admin' && role !== 'founder') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (location.pathname.startsWith('/faculty') && role !== 'faculty' && role !== 'founder' && role !== 'admin') {
     return <Navigate to="/dashboard" replace />;
   }
 

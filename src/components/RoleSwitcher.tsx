@@ -8,7 +8,9 @@ export function RoleSwitcher() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const [canSwitchPortals, setCanSwitchPortals] = useState(false);
+  const [isFounder, setIsFounder] = useState(false);
+
+  const isFounderPortal = location.pathname.startsWith('/founder');
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -16,18 +18,18 @@ export function RoleSwitcher() {
       if (!user) return;
       const isFounderEmail = user.email?.toLowerCase().trim() === 'sudhamshu1411@gmail.com';
       if (isFounderEmail) {
-        setCanSwitchPortals(true);
+        setIsFounder(true);
         return;
       }
       const metaRole = user.user_metadata?.role;
-      if (metaRole === 'founder' || metaRole === 'admin') {
-        setCanSwitchPortals(true);
+      if (metaRole === 'founder') {
+        setIsFounder(true);
         return;
       }
       if (user.id) {
         const { data } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-        if (data?.role === 'founder' || data?.role === 'admin') {
-          setCanSwitchPortals(true);
+        if (data?.role === 'founder') {
+          setIsFounder(true);
         }
       }
     }).catch(() => {});
@@ -42,7 +44,7 @@ export function RoleSwitcher() {
 
   return (
     <div className="px-4 pb-4 space-y-3">
-      {canSwitchPortals && (
+      {isFounder && isFounderPortal && (
         <div className="border border-slate-700 bg-slate-800/70 p-2.5">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[9px] font-bold uppercase tracking-widest text-[#D4AF37] flex items-center gap-1.5">
