@@ -63,6 +63,24 @@ export function emailToDeterministicUuid(email: string): string {
   return `${hex1}-${hex2.slice(0, 4)}-4${hex2.slice(5, 8)}-8${hex3.slice(1, 4)}-${hex3.slice(4, 8)}${hex4}`;
 }
 
+export function isUserEmailVerified(user: any): boolean {
+  if (!user) return false;
+  if (user.app_metadata?.provider === 'google') return true;
+  if (Array.isArray(user.app_metadata?.providers) && user.app_metadata.providers.includes('google')) {
+    return true;
+  }
+  if (typeof user.email_confirmed_at === 'string' && user.email_confirmed_at.trim().length > 0) {
+    return true;
+  }
+  if (typeof user.confirmed_at === 'string' && user.confirmed_at.trim().length > 0) {
+    return true;
+  }
+  if (user.user_metadata?.email_verified === true) {
+    return true;
+  }
+  return false;
+}
+
 const { url: safeUrl, isPlaceholder } = sanitizeSupabaseUrl(rawUrl);
 const safeKey = rawKey.trim().replace(/^["']+|["']+$/g, '').trim() || 'placeholder';
 
@@ -121,7 +139,14 @@ function readLocalSession(): any | null {
   if (typeof window === 'undefined' || !window.localStorage) return null;
   try {
     const raw = window.localStorage.getItem(FALLBACK_SESSION_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Only allow local fallback session for the founder account; require verified Supabase Auth session for all other users
+    if (parsed?.user?.email?.toLowerCase() !== 'sudhamshu1411@gmail.com') {
+      window.localStorage.removeItem(FALLBACK_SESSION_STORAGE_KEY);
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }
@@ -231,6 +256,7 @@ function buildFallbackSession(user: PortalFallbackUser) {
       full_name: user.fullName,
       role: user.role,
       phone: user.phone || '',
+      email_verified: true,
     },
     identities: [],
     created_at: user.created_at,
@@ -266,33 +292,70 @@ const enhancedAuth = new Proxy(rawAuth, {
   get(target, prop, receiver) {
     if (prop === 'signUp') {
       return async (credentials: any) => {
+        // Ensure no previous session stays active during sign-up
+        writeLocalSession(null);
+
         const email = (credentials?.email || '').trim().toLowerCase();
-        const password = credentials?.password || '';
         const meta = credentials?.options?.data || {};
-        const isFounder = email === 'sudhamshu1411@gmail.com';
-        const fullName = meta.full_name || (isFounder ? 'Sudhamshu (Founder)' : email.split('@')[0]);
-        const role = isFounder ? 'founder' : (meta.role || 'new user');
-        const phone = meta.phone || '';
+        const emailRedirectTo =
+          credentials?.options?.emailRedirectTo ||
+          (typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined);
 
-        const existingCloudUsers = await fetchCloudPortalUsers();
-        const existing = existingCloudUsers.find((u) => u.email.toLowerCase() === email);
-
-        const fallbackUser: PortalFallbackUser = {
-          id: existing?.id || emailToDeterministicUuid(email),
+        const res = await target.signUp({
+          ...credentials,
           email,
-          fullName: fullName || existing?.fullName || email.split('@')[0],
-          phone: phone || existing?.phone || '',
-          role: isFounder ? 'founder' : (existing?.role && existing.role !== 'new user' ? existing.role : role),
-          password,
-          created_at: existing?.created_at || new Date().toISOString(),
-        };
+          options: {
+            ...credentials?.options,
+            ...(emailRedirectTo ? { emailRedirectTo } : {}),
+          },
+        });
 
-        await upsertCloudPortalUser(fallbackUser);
-        const session = buildFallbackSession(fallbackUser);
-        writeLocalSession(session);
-        notifyAuthListeners('SIGNED_IN', session);
+        if (res.error) {
+          return res;
+        }
+
+        // When email enumeration protection is active on Supabase with Confirm Email enabled,
+        // signing up an already-registered email returns a user object with identities: []
+        if (
+          res.data?.user &&
+          Array.isArray(res.data.user.identities) &&
+          res.data.user.identities.length === 0
+        ) {
+          return {
+            data: { user: null, session: null },
+            error: {
+              message: 'This email is already registered. Please switch to Sign In to access your account.',
+              code: 'user_already_exists',
+            } as any,
+          };
+        }
+
+        // Sync full_name and phone into public.profiles if the user record was created
+        if (res.data?.user?.id && (meta.full_name || meta.phone)) {
+          try {
+            await baseClient
+              .from('profiles')
+              .update({
+                ...(meta.full_name ? { full_name: meta.full_name } : {}),
+                ...(meta.phone ? { phone: meta.phone } : {}),
+              })
+              .eq('id', res.data.user.id);
+          } catch {
+            // ignore profile update error before verification
+          }
+        }
+
+        // Never auto-authenticate a newly registered user before email verification
+        if (res.data?.session && !isUserEmailVerified(res.data.user)) {
+          await target.signOut();
+          notifyAuthListeners('SIGNED_OUT', null);
+        }
+
         return {
-          data: { user: session.user, session },
+          data: {
+            user: res.data?.user ?? null,
+            session: null,
+          },
           error: null,
         };
       };
@@ -303,20 +366,37 @@ const enhancedAuth = new Proxy(rawAuth, {
         const email = (credentials?.email || '').trim().toLowerCase();
         const password = credentials?.password || '';
 
-        // 1. Check cloud portal users first (avoids 400 error on /auth/v1/token for accounts created without email confirmation)
-        const cloudUsers = await fetchCloudPortalUsers();
-        const matched = cloudUsers.find((u) => u.email.toLowerCase() === email);
-        if (matched && matched.password && matched.password === password) {
-          const session = buildFallbackSession(matched);
-          writeLocalSession(session);
-          notifyAuthListeners('SIGNED_IN', session);
-          return {
-            data: { user: session.user, session },
-            error: null,
-          };
+        // 1. Authenticate against Supabase Auth first so email confirmation is strictly enforced
+        const res = await target.signInWithPassword({
+          ...credentials,
+          email,
+        });
+
+        if (!res.error && res.data?.session) {
+          if (!isUserEmailVerified(res.data.user)) {
+            await target.signOut();
+            writeLocalSession(null);
+            notifyAuthListeners('SIGNED_OUT', null);
+            return {
+              data: { user: null, session: null },
+              error: {
+                message: 'Email not confirmed. Please check your inbox and verify your email before logging in.',
+                code: 'email_not_confirmed',
+              } as any,
+            };
+          }
+          writeLocalSession(null);
+          return res;
         }
 
-        // 2. Also support Founder fallback login
+        // 2. If Supabase rejected due to unconfirmed email, immediately return that error
+        const errMsg = (res.error?.message || '').toLowerCase();
+        if (errMsg.includes('email not confirmed') || (res.error as any)?.code === 'email_not_confirmed') {
+          writeLocalSession(null);
+          return res;
+        }
+
+        // 3. Support Founder fallback login only for the founder account
         if (email === 'sudhamshu1411@gmail.com' && (password === 'Chocho1411*' || password === 'Password123')) {
           const founderUser: PortalFallbackUser = {
             id: emailToDeterministicUuid(email),
@@ -337,13 +417,6 @@ const enhancedAuth = new Proxy(rawAuth, {
           };
         }
 
-        // 3. Otherwise try native Supabase Auth signInWithPassword for pre-existing auth.users accounts
-        const res = await target.signInWithPassword(credentials);
-        if (!res.error && res.data?.session) {
-          writeLocalSession(null);
-          return res;
-        }
-
         return res;
       };
     }
@@ -352,21 +425,14 @@ const enhancedAuth = new Proxy(rawAuth, {
       return async () => {
         const res = await target.getSession();
         if (res?.data?.session) {
+          if (!isUserEmailVerified(res.data.session.user)) {
+            await target.signOut();
+            return { data: { session: null }, error: null };
+          }
           return res;
         }
         const localSession = readLocalSession();
         if (localSession?.user?.email) {
-          const email = localSession.user.email.toLowerCase();
-          const localMap = readLocalUsers();
-          const latestUser = localMap[email];
-          if (latestUser) {
-            localSession.user.user_metadata = {
-              ...localSession.user.user_metadata,
-              full_name: latestUser.fullName,
-              role: latestUser.role,
-              phone: latestUser.phone,
-            };
-          }
           return { data: { session: localSession }, error: null };
         }
         return res;
@@ -378,6 +444,10 @@ const enhancedAuth = new Proxy(rawAuth, {
         authListeners.add(callback);
         const { data } = target.onAuthStateChange((event, session) => {
           if (session) {
+            if (!isUserEmailVerified(session.user)) {
+              callback('SIGNED_OUT', null);
+              return;
+            }
             callback(event, session);
           } else {
             const fallbackSession = readLocalSession();
@@ -406,19 +476,6 @@ const enhancedAuth = new Proxy(rawAuth, {
         writeLocalSession(null);
         notifyAuthListeners('SIGNED_OUT', null);
         return target.signOut();
-      };
-    }
-
-    if (prop === 'resetPasswordForEmail') {
-      return async (email: string, options?: any) => {
-        const res = await target.resetPasswordForEmail(email, options);
-        if (res.error) {
-          const msg = (res.error.message || '').toLowerCase();
-          if (msg.includes('sending') || msg.includes('email') || msg.includes('rate limit') || (res.error as any)?.status === 500) {
-            return { data: {}, error: null };
-          }
-        }
-        return res;
       };
     }
 
