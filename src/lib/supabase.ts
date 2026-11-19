@@ -113,6 +113,7 @@ export interface PortalFallbackUser {
   phone: string;
   role: string;
   password?: string;
+  deleted?: boolean;
   created_at: string;
 }
 
@@ -168,7 +169,13 @@ function writeLocalSession(session: any | null) {
 export async function upsertCloudPortalUser(user: PortalFallbackUser): Promise<void> {
   const emailKey = user.email.trim().toLowerCase();
   const localMap = readLocalUsers();
-  localMap[emailKey] = { ...localMap[emailKey], ...user, email: emailKey };
+  const merged: PortalFallbackUser = {
+    ...localMap[emailKey],
+    ...user,
+    email: emailKey,
+    deleted: user.deleted ?? false,
+  };
+  localMap[emailKey] = merged;
   writeLocalUsers(localMap);
 
   if (!isSupabaseConfigured) return;
@@ -177,12 +184,12 @@ export async function upsertCloudPortalUser(user: PortalFallbackUser): Promise<v
     await baseClient.from('interventions').upsert([
       {
         id: rowId,
-        name: user.fullName || emailKey.split('@')[0],
+        name: merged.fullName || emailKey.split('@')[0],
         batch: PORTAL_USER_BATCH_TAG,
         issue: emailKey,
-        metric: user.role || 'new user',
-        logged: true,
-        notes: JSON.stringify(localMap[emailKey]),
+        metric: merged.deleted ? '__DELETED__' : (merged.role || 'new user'),
+        logged: !merged.deleted,
+        notes: JSON.stringify(merged),
       }
     ]);
   } catch {
@@ -204,13 +211,15 @@ export async function fetchCloudPortalUsers(): Promise<PortalFallbackUser[]> {
             const parsed: PortalFallbackUser = row.notes ? JSON.parse(row.notes) : {};
             const email = (row.issue || parsed.email || '').trim().toLowerCase();
             if (!email) continue;
+            const isDeleted = row.metric === '__DELETED__' || parsed.deleted === true;
             localMap[email] = {
               id: parsed.id || emailToDeterministicUuid(email),
               email,
               fullName: row.name || parsed.fullName || email.split('@')[0],
-              phone: parsed.phone || '',
-              role: row.metric || parsed.role || 'new user',
+              phone: parsed.phone !== undefined ? parsed.phone : (localMap[email]?.phone || ''),
+              role: isDeleted ? '__DELETED__' : (row.metric || parsed.role || 'new user'),
               password: parsed.password || localMap[email]?.password,
+              deleted: isDeleted,
               created_at: parsed.created_at || row.created_at || new Date().toISOString(),
             };
           } catch {
@@ -228,13 +237,35 @@ export async function fetchCloudPortalUsers(): Promise<PortalFallbackUser[]> {
 
 export async function deleteCloudPortalUser(email: string): Promise<void> {
   const emailKey = (email || '').trim().toLowerCase();
+  if (!emailKey) return;
   const localMap = readLocalUsers();
-  delete localMap[emailKey];
+  const existing = localMap[emailKey];
+  const tombstone: PortalFallbackUser = {
+    id: existing?.id || emailToDeterministicUuid(emailKey),
+    email: emailKey,
+    fullName: existing?.fullName || emailKey.split('@')[0],
+    phone: existing?.phone || '',
+    role: '__DELETED__',
+    deleted: true,
+    created_at: existing?.created_at || new Date().toISOString(),
+  };
+  localMap[emailKey] = tombstone;
   writeLocalUsers(localMap);
+
   if (!isSupabaseConfigured) return;
   try {
     const rowId = emailToPortalRowId(emailKey);
-    await baseClient.from('interventions').delete().eq('id', rowId);
+    await baseClient.from('interventions').upsert([
+      {
+        id: rowId,
+        name: tombstone.fullName,
+        batch: PORTAL_USER_BATCH_TAG,
+        issue: emailKey,
+        metric: '__DELETED__',
+        logged: false,
+        notes: JSON.stringify(tombstone),
+      }
+    ]);
   } catch {
     // ignore
   }
@@ -330,18 +361,27 @@ const enhancedAuth = new Proxy(rawAuth, {
           };
         }
 
-        // Sync full_name and phone into public.profiles if the user record was created
-        if (res.data?.user?.id && (meta.full_name || meta.phone)) {
-          try {
-            await baseClient
-              .from('profiles')
-              .update({
-                ...(meta.full_name ? { full_name: meta.full_name } : {}),
-                ...(meta.phone ? { phone: meta.phone } : {}),
-              })
-              .eq('id', res.data.user.id);
-          } catch {
-            // ignore profile update error before verification
+        // Persist fullName, phone, and role in cloud portal user metadata so User Access Directory displays them
+        if (res.data?.user?.id) {
+          await upsertCloudPortalUser({
+            id: res.data.user.id,
+            email,
+            fullName: meta.full_name || email.split('@')[0],
+            phone: meta.phone || '',
+            role: meta.role || 'new user',
+            deleted: false,
+            created_at: res.data.user.created_at || new Date().toISOString(),
+          });
+
+          if (meta.full_name) {
+            try {
+              await baseClient
+                .from('profiles')
+                .update({ full_name: meta.full_name })
+                .eq('id', res.data.user.id);
+            } catch {
+              // ignore profile update error before verification
+            }
           }
         }
 
@@ -405,6 +445,7 @@ const enhancedAuth = new Proxy(rawAuth, {
             phone: '',
             role: 'founder',
             password,
+            deleted: false,
             created_at: new Date().toISOString(),
           };
           await upsertCloudPortalUser(founderUser);

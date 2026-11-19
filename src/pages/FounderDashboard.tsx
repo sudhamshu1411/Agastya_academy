@@ -33,6 +33,11 @@ export function FounderDashboard() {
   const [editingFaculty, setEditingFaculty] = useState<string | null>(null);
   const [editFacultyData, setEditFacultyData] = useState<any>({});
 
+  const [editingPortalUser, setEditingPortalUser] = useState<string | null>(null);
+  const [editPortalUserName, setEditPortalUserName] = useState("");
+  const [editPortalUserPhone, setEditPortalUserPhone] = useState("");
+  const [userActionBusy, setUserActionBusy] = useState<string | null>(null);
+
   const [studentSearch, setStudentSearch] = useState("");
   const [studentBatchFilter, setStudentBatchFilter] = useState("All");
 
@@ -50,7 +55,7 @@ export function FounderDashboard() {
 
   const handleDeleteStudent = async (email: string) => {
     const user = portalUsers.find(u => u.email === email);
-    if (user?.id) await deleteUserRow(user.id, email);
+    await deleteUserRow(user?.id || "", email);
     await deleteAdmissionByEmail(email);
     fetchProfiles().then(setPortalUsers);
     getAdmissions().then(setAdmissionsLogs);
@@ -89,22 +94,63 @@ export function FounderDashboard() {
     fetchProfiles().then(setPortalUsers);
   };
 
+  const startEditPortalUser = (user: any) => {
+    setEditingPortalUser(user.email);
+    setEditPortalUserName(user.fullName || "");
+    setEditPortalUserPhone(user.phone || "");
+  };
+
+  const handleSavePortalUser = async (email: string) => {
+    setUserActionBusy(email);
+    try {
+      await updateUser(email, {
+        fullName: editPortalUserName.trim(),
+        phone: editPortalUserPhone.trim(),
+      });
+      const hasAdmission = admissionsLogs.some(a => a.email === email);
+      if (hasAdmission) {
+        await updateAdmissionByEmail(email, {
+          studentName: editPortalUserName.trim(),
+          parentContact: editPortalUserPhone.trim(),
+        });
+        getAdmissions().then(setAdmissionsLogs);
+      }
+      setEditingPortalUser(null);
+      const refreshed = await fetchProfiles();
+      setPortalUsers(refreshed);
+    } finally {
+      setUserActionBusy(null);
+    }
+  };
 
   const handleDeleteUser = async (email: string) => {
-    const user = portalUsers.find(u => u.email === email);
-    if (user?.id) await deleteUserRow(user.id, email);
-    await deleteAdmissionByEmail(email);
-    fetchProfiles().then(setPortalUsers);
-    getAdmissions().then(setAdmissionsLogs);
+    setUserActionBusy(email);
+    try {
+      const user = portalUsers.find(u => u.email === email);
+      await deleteUserRow(user?.id || "", email);
+      await deleteAdmissionByEmail(email);
+      if (editingPortalUser === email) {
+        setEditingPortalUser(null);
+      }
+      const refreshed = await fetchProfiles();
+      setPortalUsers(refreshed);
+      getAdmissions().then(setAdmissionsLogs);
+    } finally {
+      setUserActionBusy(null);
+    }
   };
 
   const handleUpdateUserRole = async (email: string, role: string) => {
+    setUserActionBusy(email);
     try {
       const user = portalUsers.find(u => u.email === email);
-      if (user?.id) await updateUserRoleAsync(user.id, email, role);
-      fetchProfiles().then(setPortalUsers);
+      await updateUserRoleAsync(user?.id || "", email, role);
+      const refreshed = await fetchProfiles();
+      setPortalUsers(refreshed);
     } catch (err: any) {
-      alert(err.message);
+      console.error("Failed to update user role:", err);
+    } finally {
+      setUserActionBusy(null);
     }
   };
 
@@ -1290,14 +1336,42 @@ export function FounderDashboard() {
                 <tbody>
                   {portalUsers.map((u, idx) => {
                     const admissionLog = admissionsLogs.find(a => a.email === u.email);
+                    const isEditing = editingPortalUser === u.email;
+                    const isBusy = userActionBusy === u.email;
                     return (
-                    <tr key={idx} className="border-b border-slate-200 hover:bg-slate-50 transition-colors group">
-                      <td className="py-4 px-4 font-bold text-slate-900 text-sm">{u.fullName || "—"}</td>
+                    <tr key={u.email || idx} className="border-b border-slate-200 hover:bg-slate-50 transition-colors group">
+                      <td className="py-4 px-4 font-bold text-slate-900 text-sm">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            autoFocus
+                            value={editPortalUserName}
+                            onChange={(e) => setEditPortalUserName(e.target.value)}
+                            placeholder="Full Name"
+                            className="border border-slate-300 px-2.5 py-1.5 w-full text-sm font-normal focus:outline-none focus:border-slate-900 bg-white"
+                          />
+                        ) : (
+                          u.fullName || "—"
+                        )}
+                      </td>
                       <td className="py-4 px-4 font-mono text-xs text-slate-500">{u.email}</td>
-                      <td className="py-4 px-4 font-mono text-xs text-slate-500">{u.phone}</td>
+                      <td className="py-4 px-4 font-mono text-xs text-slate-500">
+                        {isEditing ? (
+                          <input
+                            type="tel"
+                            value={editPortalUserPhone}
+                            onChange={(e) => setEditPortalUserPhone(e.target.value)}
+                            placeholder="+91 98765 43210"
+                            className="border border-slate-300 px-2.5 py-1.5 w-full text-xs font-mono focus:outline-none focus:border-slate-900 bg-white"
+                          />
+                        ) : (
+                          u.phone || "—"
+                        )}
+                      </td>
                       <td className="py-4 px-4">
                         <select 
-                          className={`px-2 py-1 text-[9px] uppercase tracking-widest font-bold border focus:outline-none cursor-pointer ${
+                          disabled={isBusy}
+                          className={`px-2 py-1 text-[9px] uppercase tracking-widest font-bold border focus:outline-none cursor-pointer disabled:opacity-50 ${
                             u.role === 'admin' ? 'border-amber-200 bg-amber-50 text-amber-700' :
                             u.role === 'founder' ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-amber-900' :
                             u.role === 'faculty' ? 'border-blue-200 bg-blue-50 text-blue-700' :
@@ -1329,9 +1403,47 @@ export function FounderDashboard() {
                         )}
                       </td>
                       <td className="py-4 px-4 text-right">
-                         <button onClick={() => handleDeleteUser(u.email)} className="text-slate-400 hover:text-red-600 transition-colors pointer p-1">
-                           <Trash2 className="w-4 h-4 ml-auto" />
-                         </button>
+                        {isEditing ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => setEditingPortalUser(null)}
+                              className="px-2.5 py-1 text-[10px] uppercase tracking-widest font-bold text-slate-500 hover:text-slate-900 border border-slate-300 hover:border-slate-900 transition-colors cursor-pointer disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => handleSavePortalUser(u.email)}
+                              className="bg-slate-900 text-white px-3 py-1 text-[10px] uppercase tracking-widest font-bold hover:bg-slate-800 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                            >
+                              <CheckCircle2 className="w-3 h-3" /> {isBusy ? "Saving..." : "Save"}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => startEditPortalUser(u)}
+                              title="Edit Name & Phone"
+                              className="px-2.5 py-1 border border-slate-200 hover:border-slate-900 text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold cursor-pointer disabled:opacity-50"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" /> Edit
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => handleDeleteUser(u.email)}
+                              title="Delete User"
+                              className="px-2.5 py-1 border border-red-200 hover:border-red-600 text-red-600 hover:bg-red-50 transition-colors flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold cursor-pointer disabled:opacity-50"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Delete
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   )})}
